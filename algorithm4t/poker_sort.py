@@ -30,13 +30,14 @@ class PokerSort:
                           'heart12',
                           'heart13',
                         ]
-    CARDHOLDER_X = 210
+    CARDHOLDER_X = 180
     CARDHOLDER_MIN_Y = 80
     CARDHOLDER_MAX_Y = 700
-    CARD_INDEX_X = 320
-    INDEX_TITLE_X = 320
+    CARD_INDEX_X = 290
+    INDEX_TITLE_X = 290
     INDEX_TITLE_Y = 70
-    INDEX_HIGHTLIGHT = ' <<'
+    INDEX_HIGHLIGHT = ' 取值'
+    COMPARE_HIGHLIGHT = ' 比較'
     CARD_WIDTH = 100
     CARD_HEIGHT = 152
     CARD_PREPARE_X = 20
@@ -74,10 +75,10 @@ class PokerSort:
         if not 0 <= index <= (handcards_num-1):
             raise 撲克排序錯誤('\n\n索引必需為整數0~{}'.format(handcards_num-1))
 
-        self.highlight_indexes([index])
+        self.highlight_indexes([index], self.INDEX_HIGHLIGHT)
         return self.handcards_list[index]
 
-    def highlight_indexes(self, hi_list):
+    def highlight_indexes(self, hi_list, hi_text):
         if self.last_indexes is not None :
             # remove last hightlight
             for i in self.last_indexes:
@@ -88,7 +89,7 @@ class PokerSort:
         for i in hi_list:
             index_id = self.index_id_list[i]
             #index_text = self.canvas.itemcget(index_id, 'text')
-            self.canvas.itemconfigure(index_id, text='['+str(i)+']' + self.INDEX_HIGHTLIGHT)
+            self.canvas.itemconfigure(index_id, text='['+str(i)+']' + hi_text)
 
         self.last_indexes = hi_list
         self.canvas.update()
@@ -155,7 +156,7 @@ class PokerSort:
         for i in range(handcards_num):
             self.cardholders_y_list.append(self.CARDHOLDER_MIN_Y + cardholder_intervals * i)
 
-        print('手牌位置: ', self.cardholders_y_list)
+        #print('手牌位置: ', self.cardholders_y_list)
 
 
 
@@ -343,7 +344,7 @@ class Card:
     def 插入在後(self, cardOrIndex):
         pass 
 
-    @property
-    def 點數(self):
-        return self.point
+    # @property
+    # def 點數(self):
+    #     return self.point
 
