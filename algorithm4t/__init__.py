@@ -1,6 +1,6 @@
 
 from . import common
 
-from .poker_sort import 排序撲克
+from .poker_sort import 撲克排序
 
-__all__ = ["排序撲克"]
+__all__ = ["撲克排序"]
