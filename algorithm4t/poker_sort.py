@@ -1,5 +1,6 @@
 import sys
 import tkinter as tk
+import tkinter.font as font
 import random
 from PIL import Image, ImageTk
 from pathlib import Path
@@ -29,12 +30,15 @@ class PokerSort:
                           'heart12',
                           'heart13',
                         ]
-    CARDHOLDER_X = 80
+    CARDHOLDER_X = 220
     CARDHOLDER_MIN_Y = 80
     CARDHOLDER_MAX_Y = 700
+    CARD_INDEX_X = 330
+    INDEX_TITLE_X = 330
+    INDEX_TITLE_Y = 70
     CARD_WIDTH = 100
     CARD_HEIGHT = 152
-    CARD_PREPARE_X = 280
+    CARD_PREPARE_X = 20
     CARD_PREPARE_Y = 80
 
     ANIMATE_NUM = 15
@@ -49,8 +53,9 @@ class PokerSort:
         self.distribute_list = None 
         self.handcards_list = []
         #self.cardholders_x_list = []
-        self.cardholders_y_list = []
+        self.cardholders_y_list = [] # used by cardholder and index
         
+    
         
 
     def 開始發牌(self, numOrList = None):
@@ -93,8 +98,9 @@ class PokerSort:
 
         # tk and images
         self.gui_init()
-        self.calc_cardholder_and_index_pos()
-        self.prepare_cards_and_indexes()
+        self.calc_cardholder_pos()
+        self.prepare_cards()
+        #self.show_indexes()
         self.distribute_cards()
         #Card(100,500,6,self)
 
@@ -102,7 +108,7 @@ class PokerSort:
         one_to_13 = list(range(1,14))
         return random.sample(one_to_13, sample_num)
         
-    def calc_cardholder_and_index_pos(self):
+    def calc_cardholder_pos(self):
         handcards_num = len(self.distribute_list)
         assert handcards_num >=0 , 'distribute_list should be positive'
         cardholder_intervals = (self.CARDHOLDER_MAX_Y - self.CARDHOLDER_MIN_Y) // handcards_num
@@ -121,21 +127,59 @@ class PokerSort:
 
 
 
-    def prepare_cards_and_indexes(self):
+    def prepare_cards(self):
         for point in self.distribute_list:
             card = Card(self.CARD_PREPARE_X, self.CARD_PREPARE_Y, point, self)
             card.fold()
             self.handcards_list.append(card)
+
+    def show_indexes(self):
+        for i, y in enumerate(self.cardholders_y_list):
+            self.canvas.create_text(
+                self.CARD_INDEX_X,
+                y+10,
+                font=self.index_font,
+                text='['+str(i)+']',
+                anchor=tk.NW,
+            )
+            self.canvas.update()
+            self.delay()
+            
+    def show_text(self,x, y, text, font):
+        text_id = self.canvas.create_text(
+                x,
+                y,
+                font=font,
+                text=text,
+                anchor=tk.NW,
+            )
+        self.canvas.update()
+        return text_id   
 
 
     def delay(self):
         time.sleep(0.0001)            
 
     def distribute_cards(self):
+        #index title
+        self.show_text(self.INDEX_TITLE_X,
+                       self.INDEX_TITLE_Y,
+                           '索引',
+                           self.index_font,
+                        )
+
+
         handcards_num = len(self.distribute_list)
-        for i in range(handcards_num):
+        for i in range(handcards_num):            
             card = self.handcards_list[i]
             self.move_animate(card, card.x, card.y, self.CARDHOLDER_X, self.cardholders_y_list[i])
+            # index
+            self.show_text(self.CARD_INDEX_X,
+                           self.cardholders_y_list[i] + 10,
+                           '['+str(i)+']',
+                           self.index_font,
+                        )
+
 
     def move_animate(self, card, x0, y0, x1, y1):
         # move animate card from (x0, y0) to (x1, y1)
@@ -155,6 +199,7 @@ class PokerSort:
     def gui_init(self):
         # tk canvas init
         self.root = tk.Tk()
+        self.index_font = font.Font(size=13, weight=font.NORMAL, family='Consolas')
         self.root.geometry("{}x{}+0+0".format(self.canvas_width,self.canvas_height))
         self.canvas = tk.Canvas(self.root, bg = '#c7fcda',
                width=self.canvas_width, height=self.canvas_height,
