@@ -30,12 +30,13 @@ class PokerSort:
                           'heart12',
                           'heart13',
                         ]
-    CARDHOLDER_X = 220
+    CARDHOLDER_X = 210
     CARDHOLDER_MIN_Y = 80
     CARDHOLDER_MAX_Y = 700
-    CARD_INDEX_X = 330
-    INDEX_TITLE_X = 330
+    CARD_INDEX_X = 320
+    INDEX_TITLE_X = 320
     INDEX_TITLE_Y = 70
+    INDEX_HIGHTLIGHT = ' <<'
     CARD_WIDTH = 100
     CARD_HEIGHT = 152
     CARD_PREPARE_X = 20
@@ -43,8 +44,10 @@ class PokerSort:
 
     ANIMATE_NUM = 15
 
+
+
     def __init__(self):            
-        self.fold_mode = False
+        #self.fold_mode = False
         self.canvas_width = common.poker_canvas_width + 1
         self.canvas_height = common.poker_canvas_height + 1 
         self.card14_img_list = []
@@ -52,11 +55,43 @@ class PokerSort:
         
         self.distribute_list = None 
         self.handcards_list = []
+        self.index_id_list = []
         #self.cardholders_x_list = []
         self.cardholders_y_list = [] # used by cardholder and index
+        self.last_indexes = None
         
-    
+    def __getitem__(self, index):
+        if not common.current_algorithm ==  self.ALGORITHM_NAME :
+            raise 撲克排序錯誤('\n\n要先執行開始發牌後，才能取牌')
+            #print("<<取牌無效，請先執行開始發牌>>")
+            #return
         
+        handcards_num = len(self.distribute_list)
+
+        if type(index) is not int:
+            raise 撲克排序錯誤('\n\n索引類型必須是整數')
+
+        if not 0 <= index <= (handcards_num-1):
+            raise 撲克排序錯誤('\n\n索引必需為整數0~{}'.format(handcards_num-1))
+
+        self.highlight_indexes([index])
+        return self.handcards_list[index]
+
+    def highlight_indexes(self, hi_list):
+        if self.last_indexes is not None :
+            # remove last hightlight
+            for i in self.last_indexes:
+                last_id = self.index_id_list[i]
+                self.canvas.itemconfigure(last_id, text='['+str(i)+']')
+        
+        # highlight 
+        for i in hi_list:
+            index_id = self.index_id_list[i]
+            #index_text = self.canvas.itemcget(index_id, 'text')
+            self.canvas.itemconfigure(index_id, text='['+str(i)+']' + self.INDEX_HIGHTLIGHT)
+
+        self.last_indexes = hi_list
+        self.canvas.update()
 
     def 開始發牌(self, numOrList = None):
         # algorithm name detect 
@@ -152,6 +187,7 @@ class PokerSort:
                 font=font,
                 text=text,
                 anchor=tk.NW,
+                
             )
         self.canvas.update()
         return text_id   
@@ -174,11 +210,12 @@ class PokerSort:
             card = self.handcards_list[i]
             self.move_animate(card, card.x, card.y, self.CARDHOLDER_X, self.cardholders_y_list[i])
             # index
-            self.show_text(self.CARD_INDEX_X,
+            text_id = self.show_text(self.CARD_INDEX_X,
                            self.cardholders_y_list[i] + 10,
                            '['+str(i)+']',
                            self.index_font,
                         )
+            self.index_id_list.append(text_id)
 
 
     def move_animate(self, card, x0, y0, x1, y1):
@@ -265,6 +302,9 @@ class Card:
         self.parent.canvas.coords(self.cardfront_id, self.x, self.y)
         self.parent.canvas.update()
 
+    def 掀牌(self):
+        self.show()
+
     def fold(self):
         self.parent.canvas.itemconfigure(self.cardfront_id, state=tk.HIDDEN)
         self.parent.canvas.itemconfigure(self.cardback_id, state=tk.NORMAL)
@@ -273,6 +313,9 @@ class Card:
 
         self.parent.canvas.coords(self.cardback_id, self.x, self.y)
         self.parent.canvas.update()
+
+    def 蓋牌(self):
+        self.fold()
 
     def set_position(self, x, y):
         width, height = common.poker_canvas_width, common.poker_canvas_height
@@ -299,3 +342,8 @@ class Card:
 
     def 插入在後(self, cardOrIndex):
         pass 
+
+    @property
+    def 點數(self):
+        return self.point
+
