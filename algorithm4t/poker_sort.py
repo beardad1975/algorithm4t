@@ -42,6 +42,9 @@ class PokerSort:
     CARD_HEIGHT = 152
     CARD_PREPARE_X = 20
     CARD_PREPARE_Y = 80
+    LOGO_X = 20
+    LOGO_Y = 0
+    LOGO_NAME = 'poker_sort_logo'
 
     ANIMATE_NUM = 15
 
@@ -60,7 +63,9 @@ class PokerSort:
         #self.cardholders_x_list = []
         self.cardholders_y_list = [] # used by cardholder and index
         self.last_indexes = None
-        
+        self.logo_img = None
+        self.logo_id = None
+
     def __getitem__(self, index):
         if not common.current_algorithm ==  self.ALGORITHM_NAME :
             raise 撲克排序錯誤('\n\n要先執行開始發牌後，才能取牌')
@@ -246,7 +251,7 @@ class PokerSort:
 
         #load card images
         self.load_card_images()
-
+        self.prepare_logo()
 
         #determine cards
         
@@ -262,7 +267,20 @@ class PokerSort:
         # update at last
         self.canvas.update()
 
+
+    def prepare_logo(self):
+        path = Path(__file__).parent / 'images' / (self.LOGO_NAME + '.png')
         
+        
+        _im = Image.open(path)
+        self.logo_img = ImageTk.PhotoImage(_im)
+        self.logo_id = self.canvas.create_image(
+                self.LOGO_X,
+                self.LOGO_Y,
+                image=self.logo_img,
+                anchor=tk.NW,
+                )
+        print('id: ', self.logo_id)
 
     def load_card_images(self):
         for name in self.CARD14_NAME_LIST:
