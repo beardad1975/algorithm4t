@@ -39,10 +39,10 @@ class PokerSort:
 
     INDEX_TITLE_X = 290
     INDEX_TITLE_Y = 70
-    INDEX_HIGHLIGHT = ' 取牌'
+    INDEX_HIGHLIGHT = ' <<<'
     COMPARE_HIGHLIGHT = ' 比較'
     SWAP_HIGHLIGHT = ' 交換'
-    CARD_REPR_HIGHLIGHT = ' <<'
+    INSERT_HIGHLIGHT = ' 插入'
     CARD_WIDTH = 100
     CARD_HEIGHT = 152
     CARD_PREPARE_X = 20
@@ -51,8 +51,8 @@ class PokerSort:
     LOGO_Y = 0
     LOGO_NAME = 'poker_sort_logo'
 
-    ANIMATE_NUM = 20
-
+    ANIMATE_NUM = 15
+    MULTI_ANIMATE_NUM = 10
 
 
     def __init__(self):            
@@ -71,6 +71,9 @@ class PokerSort:
         self.last_indexes = None
         self.logo_img = None
         self.logo_id = None
+
+    def __len__(self):
+        return self.handcards_num
 
     def __repr__(self):
         if not self.handcards_num :
@@ -91,7 +94,7 @@ class PokerSort:
             raise 排序撲克錯誤('\n\n索引類型必須是整數')
 
         if not 0 <= index <= (self.handcards_num-1):
-            raise 排序撲克錯誤('\n\n索引必需為整數0~{}'.format(self.handcards_num-1))
+            raise 排序撲克錯誤('\n\n索引必須為整數0~{}'.format(self.handcards_num-1))
 
         self.highlight_indexes([index], self.INDEX_HIGHLIGHT)
         return self.handcards_list[index]
@@ -134,6 +137,8 @@ class PokerSort:
                     raise 排序撲克錯誤("\n\n發牌引數中，清單內的值都必須是整數") 
                 elif not all(1 <= n <= 13 for n in numOrList):
                     raise 排序撲克錯誤("\n\n發牌引數中，清單內的值都必須在1~13(點)內")
+                elif all(n == numOrList[0] for n in numOrList):
+                    raise 排序撲克錯誤("\n\n發牌引數中，清單內的值至少要有2個不同")
                 else:
                     # all elements type and value passed
                     self.distribute_list = numOrList[:]
@@ -217,6 +222,7 @@ class PokerSort:
 
 
     def delay(self):
+        #pass
         time.sleep(0.0001)            
 
     def distribute_cards(self):
@@ -269,8 +275,8 @@ class PokerSort:
         current_y_list = []
 
         for card, x0, y0, x1, y1 in move_list:
-            step_x = (x1 - x0) / self.ANIMATE_NUM
-            step_y = (y1 - y0) / self.ANIMATE_NUM
+            step_x = (x1 - x0) / self.MULTI_ANIMATE_NUM
+            step_y = (y1 - y0) / self.MULTI_ANIMATE_NUM
             step_x_list.append(step_x)
             step_y_list.append(step_y)
 
@@ -278,7 +284,7 @@ class PokerSort:
             current_y_list.append(y0)
 
         # move multi
-        for i in range(self.ANIMATE_NUM-1):
+        for i in range(self.MULTI_ANIMATE_NUM-1):
             for j, (card, x0, y0, x1, y1) in enumerate(move_list):
                 current_x_list[j] += step_x_list[j]
                 current_y_list[j] += step_y_list[j]
@@ -367,6 +373,7 @@ class PokerSort:
         idx2 = self.handcards_list.index(card2)
 
         if idx1 == idx2 : # same card, no need to swap
+            print('<<相同位置不需交換>>')
             return 
 
         # highlight    
@@ -431,10 +438,61 @@ class PokerSort:
             raise 排序撲克錯誤('\n\n插入的引數必須是牌或索引值')        
 
 
-    def _do_insert(self, card1, card2):
+    def _do_insert(self, from_card, to_card):
         #  card1 insert to card2
-        pass
+        from_idx = self.handcards_list.index(from_card)
+        to_idx = self.handcards_list.index(to_card)
 
+        if from_idx == to_idx : # same card, no need to insert
+            print('<<相同位置不需插入>>')
+            return
+
+        # highlight    
+        self.highlight_indexes([to_idx], self.INSERT_HIGHLIGHT)
+
+
+
+        # pick out from card
+        move_list = []
+        move_list.append(
+                    (from_card, from_card.x, from_card.y, self.PICKOUT_X, from_card.y))
+        self.multimove_animate(move_list)        
+
+        # move up or down
+        move_list = []
+        move_list.append(
+                    (from_card, from_card.x, from_card.y, self.PICKOUT_X, to_card.y))
+        self.multimove_animate(move_list)  
+
+        # insert in handcards_list
+        pop_card = self.handcards_list.pop(from_idx)
+        new_idx = self.handcards_list.index(to_card)
+        if from_idx < to_idx : 
+            # all other indexes below from_idx will minus 1 (because pickout from_card)
+            self.handcards_list.insert(new_idx + 1, pop_card)
+        else:
+            self.handcards_list.insert(new_idx, pop_card)
+
+        # move other cards to make a vacancy
+        move_list = []
+        for idx, card in enumerate(self.handcards_list):
+            if card is from_card:
+                # from_card need not move here
+                continue
+            if card.y == self.cardholders_y_list[idx]:
+                # remain same pos
+                continue           
+            move_list.append(
+                    (card, card.x, card.y, card.x, self.cardholders_y_list[idx]))
+        self.multimove_animate(move_list)
+
+        self.sort_card_zorder()  
+
+        # from_card go_to the vacancy (destination)
+        move_list = []
+        move_list.append(
+                    (from_card, from_card.x, from_card.y, self.CARDHOLDER_X, from_card.y))
+        self.multimove_animate(move_list)
 
     def sort_card_zorder(self):
         
@@ -524,8 +582,8 @@ class Card:
         self.parent.swap(self, cardOrIndex)
         
 
-    def 插入(self, cardOrIndex):
-        pass 
+    def 插入到(self, cardOrIndex):
+        self.parent.insert(self, cardOrIndex) 
 
 
     
