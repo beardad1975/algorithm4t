@@ -93,9 +93,12 @@ class PokerSort:
     CARD_PREPARE_X = 0
     CARD_PREPARE_Y = 580
     CARD_PREPARE_GAP = 5
-    LOGO_X = 20
+    LOGO_X = 50
     LOGO_Y = 0
     LOGO_NAME = 'poker_sort_logo'
+
+    STATISTIC_TEXT_X = 0
+    STATISTIC_TEXT_Y = 500
 
     ANIMATE_FAST = 10
     ANIMATE_NORMAL = 20
@@ -134,6 +137,12 @@ class PokerSort:
         self.logo_id = None
 
         self.poker_sorting = False
+
+        self.showing_statistic = True
+        self.comparision_num = 0
+        self.insert_num = 0
+        self.exchange_num = 0
+        
         
 
     def __len__(self):
@@ -181,16 +190,16 @@ class PokerSort:
             # remove last hightlight
             for i in self.last_indexes:
                 last_id = self.index_id_list[i]
-                self.canvas.itemconfigure(last_id, text='['+str(i)+']')
+                self.canvas.itemconfigure(last_id, text='['+str(i)+']',fill='black')
         
         # highlight 
         for i in hi_list:
             index_id = self.index_id_list[i]
             #index_text = self.canvas.itemcget(index_id, 'text')
-            self.canvas.itemconfigure(index_id, text='['+str(i)+']' + hi_text)
+            self.canvas.itemconfigure(index_id, text='['+str(i)+']' + hi_text, fill='red')
 
         self.last_indexes = hi_list
-        self.root.update()
+        self.canvas.update()
 
     def 設定速度(self, speed):
         if speed == 'normal':
@@ -302,7 +311,7 @@ class PokerSort:
                 text='['+str(i)+']',
                 anchor=tk.NW,
             )
-            self.root.update()
+            self.canvas.update()
             self.delay()
             
     def show_text(self,x, y, text, font):
@@ -314,7 +323,7 @@ class PokerSort:
                 anchor=tk.NW,
                 
             )
-        self.root.update()
+        self.canvas.update()
         return text_id   
 
 
@@ -323,7 +332,7 @@ class PokerSort:
         time.sleep(0.0001)            
 
     def __update(self):
-        self.root.update()
+        self.canvas.update()
         print('-- updating --')
         self.root.after(1000, self.__update)
 
@@ -363,8 +372,10 @@ class PokerSort:
                         )
             self.index_id_list.append(text_id)
         
-        
-        
+    def 顯示統計(self):
+        pass        
+
+
 
     def move_animate(self, card, x0, y0, x1, y1):
         # move animate card from (x0, y0) to (x1, y1)
@@ -437,7 +448,7 @@ class PokerSort:
         #self.canvas.itemconfigure(5, state=tk.HIDDEN)
 
         
-        self.root.update()
+        self.canvas.update()
         # update every 1 sec
         #self.root.after(1000, self.__update)
 
@@ -743,10 +754,60 @@ class Card:
         self.parent.insert(self, cardOrIndex) 
 
     @property
-    def 牌面點數(self):
-        return self.point
+    def 點數(self):
+        return Point(self.point, self, self.parent)
 
     @property
     def 索引值(self):
         return self.parent.handcards_list.index(self)
 
+class Point(int):
+    def __new__(cls, value, card, parent):
+        x = int.__new__(cls, value)
+        #print('parent: ', parent)
+        x.card = card
+        x.parent = parent
+        return x
+
+    def __eq__(self, other):
+        self.parent.comparision_num += 1
+        #print(self.parent.comparision_num)
+        self.highlight_cmp(other)
+        return int.__eq__(self, other)
+
+    def __ne__(self, other):
+        self.parent.comparision_num += 1
+        #print(self.parent.comparision_num)
+        self.highlight_cmp(other)
+        return int.__ne__(self, other)
+
+    def __lt__(self, other):
+        self.parent.comparision_num += 1
+        #print(self.parent.comparision_num)
+        self.highlight_cmp(other)
+        return int.__lt__(self, other)
+
+    def __gt__(self, other):
+        self.parent.comparision_num += 1
+        #print(self.parent.comparision_num)
+        self.highlight_cmp(other)
+        return int.__gt__(self, other)
+
+    def __le__(self, other):
+        self.parent.comparision_num += 1
+        #print(self.parent.comparision_num)
+        self.highlight_cmp(other)
+        return int.__le__(self, other)
+
+    def __ge__(self, other):
+        self.parent.comparision_num += 1
+        #print(self.parent.comparision_num)
+        self.highlight_cmp(other)
+        return int.__ge__(self, other)
+
+    def highlight_cmp(self, other):
+        if isinstance(other, Point):
+            idx_list = [self.card.索引值, other.card.索引值]  
+        else:
+            idx_list = [self.card.索引值]  
+        self.parent.highlight_indexes(idx_list, self.parent.COMPARE_HIGHLIGHT)
