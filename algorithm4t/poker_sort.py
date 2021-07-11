@@ -75,23 +75,24 @@ class PokerSort:
                           'club12',
                           'club13',
                         ]
-    CARDHOLDER_X = 180
-    CARDHOLDER_MIN_Y = 80
-    CARDHOLDER_MAX_Y = 700
-    CARD_INDEX_X = 290
+    CARDHOLDER_X = 200
+    CARDHOLDER_MIN_Y = 100
+    CARDHOLDER_MAX_Y = 680
+    CARD_INDEX_X = 310
 
-    PICKOUT_X = 50
+    PICKOUT_X = 100
 
-    INDEX_TITLE_X = 290
-    INDEX_TITLE_Y = 70
+    INDEX_TITLE_X = 310
+    INDEX_TITLE_Y = 90
     INDEX_HIGHLIGHT = ' <<<'
     COMPARE_HIGHLIGHT = ' 比較'
     SWAP_HIGHLIGHT = ' 交換'
     INSERT_HIGHLIGHT = ' 插入'
     CARD_WIDTH = 100
     CARD_HEIGHT = 152
-    CARD_PREPARE_X = 20
-    CARD_PREPARE_Y = 80
+    CARD_PREPARE_X = 0
+    CARD_PREPARE_Y = 580
+    CARD_PREPARE_GAP = 5
     LOGO_X = 20
     LOGO_Y = 0
     LOGO_NAME = 'poker_sort_logo'
@@ -109,7 +110,8 @@ class PokerSort:
         self.card14_img_list = []
         # hand cards related
         
-        self.distribute_list = None 
+        self.sort_target_list = None 
+        self.prepare_cards_list = []
         self.handcards_list = []
         self.handcards_num = 0
         self.index_id_list = []
@@ -120,6 +122,7 @@ class PokerSort:
         self.logo_id = None
 
         self.poker_sorting = False
+        
 
     def __len__(self):
         return self.handcards_num
@@ -174,9 +177,8 @@ class PokerSort:
                 self.suit_name = suit_name
             else:
                 raise 排序撲克錯誤('\n\n花色名稱{} 錯誤'.format(suit_name))
-        
 
-    def 開始發牌(self, numOrList = None):
+    def 產生牌組(self, numOrList=None):
         # algorithm name detect 
         if common.current_algorithm:
             raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n一次只限執行1種演算法")
@@ -184,12 +186,12 @@ class PokerSort:
         common.current_algorithm =  self.ALGORITHM_NAME
         self.poker_sorting = True #  start poker sorting
 
-        # determine distribute_list( used by handcards later)
+        # determine sort_target_list( used by handcards later)
         if numOrList is None:
-            self.distribute_list = self.random_sample(self.DEFAULT_CARD_NUM)
+            self.sort_target_list = self.random_sample(self.DEFAULT_CARD_NUM)
         elif type(numOrList) is int:
             if 3 <=  numOrList <= 13:
-                self.distribute_list = self.random_sample(numOrList)
+                self.sort_target_list = self.random_sample(numOrList)
             else:
                  raise 排序撲克錯誤("\n\n發牌引數請輸入3~13的張數範圍內. (錯誤值:{})".format(numOrList))
         elif type(numOrList) is list :
@@ -209,7 +211,7 @@ class PokerSort:
                     raise 排序撲克錯誤(errmsg)
                 else:
                     # all elements type and value passed
-                    self.distribute_list = numOrList[:]
+                    self.sort_target_list = numOrList[:]
 
             else:
                errmsg = "\n\n發牌引數中，清單內值的個數請在3~13的張數範圍內"
@@ -218,53 +220,41 @@ class PokerSort:
         else:
             raise 排序撲克錯誤("\n\n發牌引數請輸入1~13整數或清單")
             
-        #print('發牌: ',self.distribute_list)
-        self.handcards_num = len(self.distribute_list)
+        #print('發牌: ',self.sort_target_list)
+        #self.handcards_num = len(self.sort_target_list)
 
         # tk and images
         self.gui_init()
         self.calc_cardholder_pos()
         self.prepare_cards()
-        #self.show_indexes()
-        self.distribute_cards()
-        
-        
-        # # test
-        # card0  = self.handcards_list[0]
-        # card2  = self.handcards_list[2]
-        # move_list = [
-        #     (card0, 50, 50, 200, 200),
-        #     (card2, 250, 150, 200, 300),
-        # ]
-        # self.multimove_animate(move_list)
+
+
+
+
 
     def random_sample(self, sample_num):
         one_to_13 = list(range(1,14))
         return random.sample(one_to_13, sample_num)
         
     def calc_cardholder_pos(self):
-        
-        cardholder_intervals = (self.CARDHOLDER_MAX_Y - self.CARDHOLDER_MIN_Y) // self.handcards_num
+        sort_target_num = len(self.sort_target_list)
+        cardholder_intervals = (self.CARDHOLDER_MAX_Y - self.CARDHOLDER_MIN_Y) // sort_target_num
         if cardholder_intervals > self.CARD_HEIGHT :
             cardholder_intervals = self.CARD_HEIGHT + 5
 
-        
-
-        for i in range(self.handcards_num):
+        for i in range(sort_target_num):
             self.cardholders_y_list.append(self.CARDHOLDER_MIN_Y + cardholder_intervals * i)
 
-        #print('手牌位置: ', self.cardholders_y_list)
-
-
-
-
-
-
     def prepare_cards(self):
-        for point in self.distribute_list:
-            card = Card(self.CARD_PREPARE_X, self.CARD_PREPARE_Y, point, self)
+        tmp_list = reversed(self.sort_target_list)
+        for idx, point in enumerate(tmp_list):
+            card = Card(self.CARD_PREPARE_X, 
+                        self.CARD_PREPARE_Y + idx * self.CARD_PREPARE_GAP, 
+                        point, 
+                        self)
             card.fold()
-            self.handcards_list.append(card)
+            self.prepare_cards_list.append(card)
+            #self.handcards_list.append(card)
 
     def show_indexes(self):
         for i, y in enumerate(self.cardholders_y_list):
@@ -295,28 +285,43 @@ class PokerSort:
         #pass
         time.sleep(0.0001)            
 
-    def distribute_cards(self):
-        #index title
-        self.show_text(self.INDEX_TITLE_X,
-                       self.INDEX_TITLE_Y,
-                           '索引',
-                           self.index_font,
-                        )
+    def 發牌(self, 單張=False):
+        if len(self.prepare_cards_list) == 0:
+            print('<<牌已發完>>')
+            return
 
+        previous_num = self.handcards_num
 
-        
-        for i in range(self.handcards_num):            
-            card = self.handcards_list[i]
-            self.move_animate(card, card.x, card.y, self.CARDHOLDER_X, self.cardholders_y_list[i])
+        if previous_num == 0:
+            self.show_text(self.INDEX_TITLE_X,
+                            self.INDEX_TITLE_Y,
+                            '索引',
+                            self.index_font,
+                            )
+
+        # determine distribute card num
+        if 單張:
+            distribute_num = 1
+        else:
+            distribute_num = len(self.prepare_cards_list)
+
+        for i in range(distribute_num):            
+            card = self.prepare_cards_list.pop()
+            self.handcards_list.append(card)
+            self.handcards_num = len(self.handcards_list)
+            self.sort_card_zorder()
+            print(previous_num, i)
+            self.move_animate(card, card.x, card.y, self.CARDHOLDER_X, self.cardholders_y_list[previous_num + i])
             card.show()
             # index
             text_id = self.show_text(self.CARD_INDEX_X,
-                           self.cardholders_y_list[i] + 10,
-                           '['+str(i)+']',
+                           self.cardholders_y_list[previous_num + i] + 10,
+                           '['+str(previous_num + i)+']',
                            self.index_font,
                         )
             self.index_id_list.append(text_id)
-
+        
+        
 
     def move_animate(self, card, x0, y0, x1, y1):
         # move animate card from (x0, y0) to (x1, y1)
@@ -595,15 +600,21 @@ class PokerSort:
 
     def sort_card_zorder(self):
         
+        
 
-        if self.handcards_num == 1:
+        if self.handcards_num <= 1:
             #no need for only 1 card
             return
 
+        
+
         for i in range(self.handcards_num-1):
+            if self.handcards_num == 7:
+                print(i)
             first_card = self.handcards_list[i]
             second_card = self.handcards_list[i+1]
-            self.canvas.tag_raise(second_card.current_id, first_card.current_id )
+            self.canvas.tag_raise(second_card.cardfront_id, first_card.cardfront_id )
+            self.canvas.tag_raise(second_card.cardback_id, first_card.cardback_id )
 
 
 
@@ -687,5 +698,8 @@ class Card:
 
     
     def 牌面點數(self):
-            return self.point
+        return self.point
+
+    #def 索引值(self):
+        pass
 
