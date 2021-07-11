@@ -97,8 +97,16 @@ class PokerSort:
     LOGO_Y = 0
     LOGO_NAME = 'poker_sort_logo'
 
-    ANIMATE_NUM = 10
-    MULTI_ANIMATE_NUM = 5
+    ANIMATE_FAST = 10
+    ANIMATE_NORMAL = 20
+    ANIMATE_SLOW =  40
+    MULTI_ANIMATE_FAST = 5
+    MULTI_ANIMATE_NORMAL = 10
+    MULTI_ANIMATE_SLOW = 20
+
+
+    #ANIMATE_NUM = 10
+    #MULTI_ANIMATE_NUM = 5
 
 
     def __init__(self):            
@@ -108,6 +116,10 @@ class PokerSort:
         self.suit_name = 'random'  
         self.card14_name_list = []
         self.card14_img_list = []
+        
+        self.animate_speed = self.ANIMATE_NORMAL
+        self.multi_animate_speed = self.MULTI_ANIMATE_NORMAL
+        
         # hand cards related
         
         self.sort_target_list = None 
@@ -178,7 +190,20 @@ class PokerSort:
             self.canvas.itemconfigure(index_id, text='['+str(i)+']' + hi_text)
 
         self.last_indexes = hi_list
-        self.canvas.update()
+        self.root.update()
+
+    def 設定速度(self, speed):
+        if speed == 'normal':
+            self.animate_speed = self.ANIMATE_NORMAL
+            self.multi_animate_speed = self.MULTI_ANIMATE_NORMAL
+        elif speed == 'fast':
+            self.animate_speed = self.ANIMATE_FAST
+            self.multi_animate_speed = self.MULTI_ANIMATE_FAST
+        elif speed == 'slow':
+            self.animate_speed = self.ANIMATE_SLOW
+            self.multi_animate_speed = self.MULTI_ANIMATE_SLOW
+        else:
+            raise 排序撲克錯誤("\n\n速度引數應為fast, normal或slow. (錯誤值:{})".format(speed))
 
     def 選擇花色(self, suit_name):
         if self.poker_sorting:
@@ -277,7 +302,7 @@ class PokerSort:
                 text='['+str(i)+']',
                 anchor=tk.NW,
             )
-            self.canvas.update()
+            self.root.update()
             self.delay()
             
     def show_text(self,x, y, text, font):
@@ -289,13 +314,18 @@ class PokerSort:
                 anchor=tk.NW,
                 
             )
-        self.canvas.update()
+        self.root.update()
         return text_id   
 
 
     def delay(self):
         #pass
         time.sleep(0.0001)            
+
+    def __update(self):
+        self.root.update()
+        print('-- updating --')
+        self.root.after(1000, self.__update)
 
     def 發牌(self, 單張=False):
         if len(self.prepare_cards_list) == 0:
@@ -338,11 +368,11 @@ class PokerSort:
 
     def move_animate(self, card, x0, y0, x1, y1):
         # move animate card from (x0, y0) to (x1, y1)
-        step_x = (x1 - x0) / self.ANIMATE_NUM
-        step_y = (y1 - y0) / self.ANIMATE_NUM
+        step_x = (x1 - x0) / self.animate_speed
+        step_y = (y1 - y0) / self.animate_speed
 
         current_x, current_y = x0, y0
-        for i in range(self.ANIMATE_NUM-1):
+        for i in range(self.animate_speed-1):
             current_x += step_x
             current_y += step_y
             card.set_position(int(current_x), int(current_y))
@@ -363,8 +393,8 @@ class PokerSort:
         current_y_list = []
 
         for card, x0, y0, x1, y1 in move_list:
-            step_x = (x1 - x0) / self.MULTI_ANIMATE_NUM
-            step_y = (y1 - y0) / self.MULTI_ANIMATE_NUM
+            step_x = (x1 - x0) / self.multi_animate_speed
+            step_y = (y1 - y0) / self.multi_animate_speed
             step_x_list.append(step_x)
             step_y_list.append(step_y)
 
@@ -372,7 +402,7 @@ class PokerSort:
             current_y_list.append(y0)
 
         # move multi
-        for i in range(self.MULTI_ANIMATE_NUM-1):
+        for i in range(self.multi_animate_speed-1):
             for j, (card, x0, y0, x1, y1) in enumerate(move_list):
                 current_x_list[j] += step_x_list[j]
                 current_y_list[j] += step_y_list[j]
@@ -407,9 +437,9 @@ class PokerSort:
         #self.canvas.itemconfigure(5, state=tk.HIDDEN)
 
         
-
-        # update at last
-        self.canvas.update()
+        self.root.update()
+        # update every 1 sec
+        #self.root.after(1000, self.__update)
 
 
     def prepare_logo(self):
@@ -625,8 +655,9 @@ class PokerSort:
             
             first_card = self.handcards_list[i]
             second_card = self.handcards_list[i+1]
-            self.canvas.tag_raise(second_card.cardfront_id, first_card.cardfront_id )
-            self.canvas.tag_raise(second_card.cardback_id, first_card.cardback_id )
+            #self.canvas.tag_raise(second_card.cardfront_id, first_card.cardfront_id )
+            #self.canvas.tag_raise(second_card.cardback_id, first_card.cardback_id )
+            self.canvas.tag_raise(second_card.current_id, first_card.current_id )
 
     @property
     def 未發牌數(self):
@@ -654,7 +685,7 @@ class Card:
         # default 
         self.show()
 
-        self.parent.canvas.update()
+        self.parent.root.update()
 
     def __repr__(self):
         idx = self.parent.handcards_list.index(self)
@@ -667,7 +698,8 @@ class Card:
         self.current_id = self.cardfront_id
                 
         self.parent.canvas.coords(self.cardfront_id, self.x, self.y)
-        self.parent.canvas.update()
+        self.parent.sort_card_zorder() 
+        self.parent.root.update()
 
     def 掀牌(self):
         self.show()
@@ -679,7 +711,8 @@ class Card:
         self.current_id = self.cardback_id
 
         self.parent.canvas.coords(self.cardback_id, self.x, self.y)
-        self.parent.canvas.update()
+        self.parent.sort_card_zorder() 
+        self.parent.root.update()
 
     def 蓋牌(self):
         self.fold()
@@ -693,12 +726,12 @@ class Card:
         self.x = x 
         self.y = y
         self.parent.canvas.coords(self.current_id, self.x, self.y)
-        self.parent.canvas.update()
+        self.parent.root.update()
 
     # def delete(self):
     #     self.parent.canvas.delete(self.cardfront_id)
     #     self.parent.canvas.delete(self.cardback_id)
-    #     self.parent.canvas.update()
+    #     self.parent.root.update()
     #     del self
 
     def 交換(self, cardOrIndex):
