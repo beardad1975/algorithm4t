@@ -97,8 +97,8 @@ class PokerSort:
     LOGO_Y = 0
     LOGO_NAME = 'poker_sort_logo'
 
-    ANIMATE_NUM = 15
-    MULTI_ANIMATE_NUM = 10
+    ANIMATE_NUM = 10
+    MULTI_ANIMATE_NUM = 5
 
 
     def __init__(self):            
@@ -128,29 +128,41 @@ class PokerSort:
         return self.handcards_num
 
     def __repr__(self):
-        if not self.handcards_num :
-            return "<<請先執行 開始發牌>>"
+        if not self.poker_sorting :
+            return "<<請先執行 產生牌組>>"
 
         card_point_list = [ c.point for c in self.handcards_list]
         return '撲克牌{}張: {} '.format(self.handcards_num, repr(card_point_list))
 
-    def __getitem__(self, index):
-        if not common.current_algorithm ==  self.ALGORITHM_NAME :
-            raise 排序撲克錯誤('\n\n要先執行開始發牌後，才能取牌')
+    def __getitem__(self, idx):
+        if not self.poker_sorting :
+            raise 排序撲克錯誤('\n\n要先執行 產生牌組')
             #print("<<取牌無效，請先執行開始發牌>>")
             #return
-        
-        if type(index) is not int:
-            raise 排序撲克錯誤('\n\n索引類型必須是整數. (錯誤值:{})'.format(index))
 
-        if not 0 <= index <= (self.handcards_num-1):
+        if self.handcards_num == 0:
+            raise 排序撲克錯誤('\n\n要先執行 發牌')
+        
+        if type(idx) is not int:
+            raise 排序撲克錯誤('\n\n索引類型必須是整數. (錯誤值:{})'.format(idx))
+
+        if idx >= 0 and (not 0 <= idx <= (self.handcards_num-1)):
             raise 排序撲克錯誤('\n\n索引值必須為整數0~{}. (錯誤值:{})'.format(
                                                     self.handcards_num-1,
-                                                     index,
+                                                     idx,
                                                     ))
+        if idx < 0 and (not -self.handcards_num <= idx <= -1):
+            raise 排序撲克錯誤('\n\n索引值必須為整數-{}~-1. (錯誤值:{})'.format(
+                                                    self.handcards_num,
+                                                     idx,
+                                                    ))
+        
 
-        self.highlight_indexes([index], self.INDEX_HIGHLIGHT)
-        return self.handcards_list[index]
+        if idx < 0 :
+            idx = self.handcards_num - ( -idx)
+
+        self.highlight_indexes([idx], self.INDEX_HIGHLIGHT)
+        return self.handcards_list[idx]
 
     def highlight_indexes(self, hi_list, hi_text):
         if self.last_indexes is not None :
@@ -229,7 +241,7 @@ class PokerSort:
         self.prepare_cards()
 
 
-
+    
 
 
     def random_sample(self, sample_num):
@@ -288,7 +300,7 @@ class PokerSort:
     def 發牌(self, 單張=False):
         if len(self.prepare_cards_list) == 0:
             print('<<牌已發完>>')
-            return
+            return 
 
         previous_num = self.handcards_num
 
@@ -310,7 +322,7 @@ class PokerSort:
             self.handcards_list.append(card)
             self.handcards_num = len(self.handcards_list)
             self.sort_card_zorder()
-            print(previous_num, i)
+            
             self.move_animate(card, card.x, card.y, self.CARDHOLDER_X, self.cardholders_y_list[previous_num + i])
             card.show()
             # index
@@ -320,6 +332,7 @@ class PokerSort:
                            self.index_font,
                         )
             self.index_id_list.append(text_id)
+        
         
         
 
@@ -609,14 +622,15 @@ class PokerSort:
         
 
         for i in range(self.handcards_num-1):
-            if self.handcards_num == 7:
-                print(i)
+            
             first_card = self.handcards_list[i]
             second_card = self.handcards_list[i+1]
             self.canvas.tag_raise(second_card.cardfront_id, first_card.cardfront_id )
             self.canvas.tag_raise(second_card.cardback_id, first_card.cardback_id )
 
-
+    @property
+    def 未發牌數(self):
+        return len(self.prepare_cards_list)
 
 
 排序撲克 = PokerSort()
@@ -681,11 +695,11 @@ class Card:
         self.parent.canvas.coords(self.current_id, self.x, self.y)
         self.parent.canvas.update()
 
-    def delete(self):
-        self.parent.canvas.delete(self.cardfront_id)
-        self.parent.canvas.delete(self.cardback_id)
-        self.parent.canvas.update()
-        del self
+    # def delete(self):
+    #     self.parent.canvas.delete(self.cardfront_id)
+    #     self.parent.canvas.delete(self.cardback_id)
+    #     self.parent.canvas.update()
+    #     del self
 
     def 交換(self, cardOrIndex):
         
@@ -695,11 +709,11 @@ class Card:
     def 插入到(self, cardOrIndex):
         self.parent.insert(self, cardOrIndex) 
 
-
-    
+    @property
     def 牌面點數(self):
         return self.point
 
-    #def 索引值(self):
-        pass
+    @property
+    def 索引值(self):
+        return self.parent.handcards_list.index(self)
 
