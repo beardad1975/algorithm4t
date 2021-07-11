@@ -15,7 +15,22 @@ class 排序撲克錯誤(Exception):
 class PokerSort:
     ALGORITHM_NAME = "排序撲克"
     DEFAULT_CARD_NUM = 4
-    CARD14_NAME_LIST = ['back', 
+    SPADE14_NAME_LIST = ['back', 
+                          'spade1',
+                          'spade2',
+                          'spade3',
+                          'spade4',
+                          'spade5',
+                          'spade6',
+                          'spade7',
+                          'spade8',
+                          'spade9',
+                          'spade10',
+                          'spade11',
+                          'spade12',
+                          'spade13',
+                        ]
+    HEART14_NAME_LIST = ['back', 
                           'heart1',
                           'heart2',
                           'heart3',
@@ -29,6 +44,36 @@ class PokerSort:
                           'heart11',
                           'heart12',
                           'heart13',
+                        ]
+    DIAMOND14_NAME_LIST = ['back', 
+                          'diamond1',
+                          'diamond2',
+                          'diamond3',
+                          'diamond4',
+                          'diamond5',
+                          'diamond6',
+                          'diamond7',
+                          'diamond8',
+                          'diamond9',
+                          'diamond10',
+                          'diamond11',
+                          'diamond12',
+                          'diamond13',
+                        ]
+    CLUB14_NAME_LIST = ['back', 
+                          'club1',
+                          'club2',
+                          'club3',
+                          'club4',
+                          'club5',
+                          'club6',
+                          'club7',
+                          'club8',
+                          'club9',
+                          'club10',
+                          'club11',
+                          'club12',
+                          'club13',
                         ]
     CARDHOLDER_X = 180
     CARDHOLDER_MIN_Y = 80
@@ -58,7 +103,9 @@ class PokerSort:
     def __init__(self):            
         #self.fold_mode = False
         self.canvas_width = common.poker_canvas_width + 1
-        self.canvas_height = common.poker_canvas_height + 1 
+        self.canvas_height = common.poker_canvas_height + 1
+        self.suit_name = 'random'  
+        self.card14_name_list = []
         self.card14_img_list = []
         # hand cards related
         
@@ -71,6 +118,8 @@ class PokerSort:
         self.last_indexes = None
         self.logo_img = None
         self.logo_id = None
+
+        self.poker_sorting = False
 
     def __len__(self):
         return self.handcards_num
@@ -88,13 +137,14 @@ class PokerSort:
             #print("<<取牌無效，請先執行開始發牌>>")
             #return
         
-        
-
         if type(index) is not int:
-            raise 排序撲克錯誤('\n\n索引類型必須是整數')
+            raise 排序撲克錯誤('\n\n索引類型必須是整數. (錯誤值:{})'.format(index))
 
         if not 0 <= index <= (self.handcards_num-1):
-            raise 排序撲克錯誤('\n\n索引必須為整數0~{}'.format(self.handcards_num-1))
+            raise 排序撲克錯誤('\n\n索引值必須為整數0~{}. (錯誤值:{})'.format(
+                                                    self.handcards_num-1,
+                                                     index,
+                                                    ))
 
         self.highlight_indexes([index], self.INDEX_HIGHLIGHT)
         return self.handcards_list[index]
@@ -115,12 +165,24 @@ class PokerSort:
         self.last_indexes = hi_list
         self.canvas.update()
 
+    def 選擇花色(self, suit_name):
+        if self.poker_sorting:
+            print('<<選擇花色 需在 開始發牌 之前執行>>')
+            return
+        else:
+            if suit_name in ['spade', 'heart', 'diamond', 'club', 'random']:
+                self.suit_name = suit_name
+            else:
+                raise 排序撲克錯誤('\n\n花色名稱{} 錯誤'.format(suit_name))
+        
+
     def 開始發牌(self, numOrList = None):
         # algorithm name detect 
         if common.current_algorithm:
             raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n一次只限執行1種演算法")
 
         common.current_algorithm =  self.ALGORITHM_NAME
+        self.poker_sorting = True #  start poker sorting
 
         # determine distribute_list( used by handcards later)
         if numOrList is None:
@@ -129,22 +191,30 @@ class PokerSort:
             if 3 <=  numOrList <= 13:
                 self.distribute_list = self.random_sample(numOrList)
             else:
-                 raise 排序撲克錯誤("\n\n發牌引數請輸入3~13(張)")
+                 raise 排序撲克錯誤("\n\n發牌引數請輸入3~13的張數範圍內. (錯誤值:{})".format(numOrList))
         elif type(numOrList) is list :
             if 3 <= len(numOrList) <= 13:               
                 check_point_range = []
                 if not all(isinstance(n, int) for n in numOrList):
-                    raise 排序撲克錯誤("\n\n發牌引數中，清單內的值都必須是整數") 
+                    errmsg = "\n\n發牌引數中，清單的值都必須是整數"
+                    errmsg += "\n(錯誤清單:{})".format(repr(numOrList))
+                    raise 排序撲克錯誤(errmsg) 
                 elif not all(1 <= n <= 13 for n in numOrList):
-                    raise 排序撲克錯誤("\n\n發牌引數中，清單內的值都必須在1~13(點)內")
-                elif all(n == numOrList[0] for n in numOrList):
-                    raise 排序撲克錯誤("\n\n發牌引數中，清單內的值至少要有2個不同")
+                    errmsg = "\n\n發牌引數中，清單的值都必須在1~13的點數範圍內"
+                    errmsg += "\n(錯誤清單:{})".format(repr(numOrList))
+                    raise 排序撲克錯誤(errmsg)
+                elif len(set(numOrList)) < 3 :
+                    errmsg = "\n\n發牌引數中，清單的值至少要有3個不同"
+                    errmsg += "\n(錯誤清單:{})".format(repr(numOrList))
+                    raise 排序撲克錯誤(errmsg)
                 else:
                     # all elements type and value passed
                     self.distribute_list = numOrList[:]
 
             else:
-               raise 排序撲克錯誤("\n\n發牌引數中，清單的數量請在3~13(張)內") 
+               errmsg = "\n\n發牌引數中，清單內值的個數請在3~13的張數範圍內"
+               errmsg += "\n(錯誤清單:{})".format(repr(numOrList)) 
+               raise 排序撲克錯誤(errmsg) 
         else:
             raise 排序撲克錯誤("\n\n發牌引數請輸入1~13整數或清單")
             
@@ -339,7 +409,27 @@ class PokerSort:
         #print('id: ', self.logo_id)
 
     def load_card_images(self):
-        for name in self.CARD14_NAME_LIST:
+        # load according to suit
+        if self.suit_name == 'spade':
+            self.card14_name_list = self.SPADE14_NAME_LIST
+        elif self.suit_name == 'heart':
+            self.card14_name_list = self.HEART14_NAME_LIST 
+        elif self.suit_name == 'diamond':
+            self.card14_name_list = self.DIAMOND14_NAME_LIST
+        elif self.suit_name == 'club':
+            self.card14_name_list = self.CLUB14_NAME_LIST
+        elif self.suit_name == 'random':
+            tmp_suit_list = [
+                        self.SPADE14_NAME_LIST,
+                        self.HEART14_NAME_LIST,
+                        self.DIAMOND14_NAME_LIST,
+                        self.CLUB14_NAME_LIST,
+                    ]
+            self.card14_name_list = random.choice(tmp_suit_list)
+        else:
+            raise 排序撲克錯誤('\n\n花色名稱錯誤. (錯誤值:{})'.format(self.suit_name))
+
+        for name in self.card14_name_list:
             _im = Image.open(Path(__file__).parent / 'images' / (name + '.png'))       
             self.card14_img_list.append(ImageTk.PhotoImage(_im))
 
@@ -351,12 +441,18 @@ class PokerSort:
             self._do_swap(cardOrIdx1, cardOrIdx2)
         elif isinstance(cardOrIdx1, Card) and isinstance(cardOrIdx2, int):
             if  not 0 <= cardOrIdx2 < self.handcards_num:
-                raise 排序撲克錯誤('\n\n交換的索引值範圍要在0~{}'.format(self.handcards_num-1))
+                raise 排序撲克錯誤('\n\n交換的索引值範圍要在0~{}. (錯誤值:{})'.format(
+                                                    self.handcards_num-1,
+                                                    cardOrIdx2,
+                                                    ))
             else:
                 self._do_swap(cardOrIdx1, self.handcards_list[cardOrIdx2] )
         elif isinstance(cardOrIdx1, int) and isinstance(cardOrIdx2, Card):
             if not 0 <= cardOrIdx1 < self.handcards_num:
-                raise 排序撲克錯誤('\n\n交換的索引值範圍要在0~{}'.format(self.handcards_num-1))
+                raise 排序撲克錯誤('\n\n交換的索引值範圍要在0~{}. (錯誤值:{})'.format(
+                                                    self.handcards_num-1,
+                                                    cardOrIdx1,
+                                                    ))
             else:
                 self._do_swap(self.handcards_list[cardOrIdx1], cardOrIdx2 )
         elif isinstance(cardOrIdx1, int) and isinstance(cardOrIdx2, int):
@@ -420,7 +516,10 @@ class PokerSort:
             self._do_insert(cardOrIdx1, cardOrIdx2)
         elif isinstance(cardOrIdx1, Card) and isinstance(cardOrIdx2, int):
             if  not 0 <= cardOrIdx2 < self.handcards_num:
-                raise 排序撲克錯誤('\n\n插入索引值範圍要在0~{}'.format(self.handcards_num-1))
+                raise 排序撲克錯誤('\n\n插入索引值範圍要在0~{}. (錯誤值:{})'.format(
+                                                            self.handcards_num-1,
+                                                            cardOrIdx2,
+                                                            ))
             else:
                 self._do_insert(cardOrIdx1, self.handcards_list[cardOrIdx2] )
         elif isinstance(cardOrIdx1, int) and isinstance(cardOrIdx2, Card):
