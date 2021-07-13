@@ -90,13 +90,14 @@ class PokerSort:
     INSERT_HIGHLIGHT = ' 插入'
     CARD_WIDTH = 100
     CARD_HEIGHT = 152
-    CARD_PREPARE_X = 0
-    CARD_PREPARE_Y = 580
+    CARD_PREPARE_X = 10
+    CARD_PREPARE_Y = 640
     CARD_PREPARE_GAP = 5
     LOGO_X = 50
     LOGO_Y = 0
     LOGO_NAME = 'poker_sort_logo'
 
+    CHECK_X = 175
     
 
     ANIMATE_FAST = 10
@@ -139,12 +140,8 @@ class PokerSort:
 
         self.showing_stat = False
         self.statistic = None
-        #self.comparision_num = 0
-        #self.insert_num = 0
-        #self.exchange_num = 0
-        
-        #self.stat_num_id_list = []
-        
+        self.result_checked_start = None
+        self.result_checked_num = 0
 
     def __len__(self):
         return self.handcards_num
@@ -314,7 +311,7 @@ class PokerSort:
         tmp_list = reversed(self.sort_target_list)
         for idx, point in enumerate(tmp_list):
             card = Card(self.CARD_PREPARE_X, 
-                        self.CARD_PREPARE_Y + idx * self.CARD_PREPARE_GAP, 
+                        self.CARD_PREPARE_Y - idx * self.CARD_PREPARE_GAP, 
                         point, 
                         self)
             card.fold()
@@ -412,7 +409,123 @@ class PokerSort:
 
         self.showing_stat = True        
 
+    def 排序結算(self):
+        if not self.poker_sorting :
+            return "<<請先執行 產生牌組>>"
 
+        if self.prepare_cards_list:
+            print('<<結算前，請把牌發完>>')
+            return
+
+        self.count_result()  # head/tail order_num
+        self.check_animate() # check beside cards
+        self.show_result() # blink result and mainloop
+        self.root.mainloop()
+
+    def count_result(self):
+        num = len(self.sort_target_list)
+        forward_sort_list = sorted(self.sort_target_list)
+        reversed_sort_list = list(reversed(forward_sort_list))
+        card_point_list = [ c.point for c in self.handcards_list]
+
+        # count: head forward
+        head_forward_counter = 0
+        for i in range(num):
+            if forward_sort_list[i] == card_point_list[i]:
+                head_forward_counter += 1
+            else:
+                #print(forward_sort_list)
+                #print(card_point_list)
+                #print('head forward: ', head_forward_counter)
+                break
+        print('head forward: ', head_forward_counter)
+
+        # count: head reverse
+        head_reverse_counter = 0
+        for i in range(num):
+            if reversed_sort_list[i] == card_point_list[i]:
+                head_reverse_counter += 1
+            else:
+                # print(reversed_sort_list)
+                # print(card_point_list)
+                # print('head reverse: ', head_reverse_counter)
+                break
+        print('head reverse: ', head_reverse_counter)
+
+        # count: tail forward
+        tail_forward_counter = 0
+        for i in reversed(range(num)):
+            if forward_sort_list[i] == card_point_list[i]:
+                tail_forward_counter += 1
+            else:
+                # print(forward_sort_list)
+                # print(card_point_list)
+                # print('tail forward: ', tail_forward_counter)
+                break   
+        print('tail forward: ', tail_forward_counter)
+
+        # count: tail reverse
+        tail_reverse_counter = 0
+        for i in reversed(range(num)):
+            if reversed_sort_list[i] == card_point_list[i]:
+                tail_reverse_counter += 1
+            else:
+                # print(reversed_sort_list)
+                # print(card_point_list)
+                # print('tail reverse: ', tail_reverse_counter)
+                break 
+        print('tail reverse: ', tail_reverse_counter)  
+
+        if head_forward_counter > self.result_checked_num:
+            self.result_checked_num = head_forward_counter
+            self.result_checked_start = "head"
+
+        if head_reverse_counter > self.result_checked_num:
+            self.result_checked_num = head_reverse_counter
+            self.result_checked_start = "head"
+
+        if tail_forward_counter > self.result_checked_num:
+            self.result_checked_num = tail_forward_counter
+            self.result_checked_start = "tail"    
+
+        if tail_reverse_counter > self.result_checked_num:
+            self.result_checked_num = tail_reverse_counter
+            self.result_checked_start = "tail" 
+
+        print(self.result_checked_start, self.result_checked_num)   
+
+    def check_animate(self):
+        if self.result_checked_num <= 0:
+            return
+
+        _im = Image.open(Path(__file__).parent / 'images' / 'check.png')
+        self.check_img = ImageTk.PhotoImage(_im)
+
+        if self.result_checked_start == 'head':
+            for i in range(self.result_checked_num):
+                self.canvas.create_image(
+                    self.CHECK_X,
+                    self.cardholders_y_list[i]+10,
+                    image=self.check_img,
+                    anchor=tk.NW,
+                )
+                self.canvas.update()
+                time.sleep(0.25)
+        elif self.result_checked_start == 'tail':
+            tail_range = range(self.handcards_num-self.result_checked_num  , self.handcards_num)
+            for i in reversed(tail_range):
+                self.canvas.create_image(
+                    self.CHECK_X,
+                    self.cardholders_y_list[i]+10,
+                    image=self.check_img,
+                    anchor=tk.NW,
+                )
+                self.canvas.update()
+                time.sleep(0.25)
+        
+    def show_result(self):
+        pass
+           
 
     def move_animate(self, card, x0, y0, x1, y1):
         # move animate card from (x0, y0) to (x1, y1)
