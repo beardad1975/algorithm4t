@@ -137,7 +137,7 @@ class PokerSort:
 
         self.poker_sorting = False
 
-        self.showing_stat = True
+        self.showing_stat = False
         self.statistic = None
         #self.comparision_num = 0
         #self.insert_num = 0
@@ -282,9 +282,15 @@ class PokerSort:
         self.calc_cardholder_pos()
         self.prepare_cards()
         self.prepare_statisic()
+        
 
     def prepare_statisic(self):
         self.statistic = Statistic(self)
+
+        if self.showing_stat:
+            self.statistic.show()
+        else:
+            self.statistic.hide()
         
         
 
@@ -394,7 +400,17 @@ class PokerSort:
             self.index_id_list.append(text_id)
         
     def 顯示統計(self):
-        pass        
+        if self.poker_sorting:
+            self.statistic.show()
+        
+        self.showing_stat = True
+
+
+    def 隱藏統計(self):
+        if self.poker_sorting:
+            self.statistic.hide()
+
+        self.showing_stat = True        
 
 
 
@@ -590,6 +606,9 @@ class PokerSort:
                     (card2, card2.x, card2.y, self.CARDHOLDER_X, card2.y))
         self.multimove_animate(move_list)       
 
+        # keep record
+        self.statistic.swap_add1()
+
     def insert(self, cardOrIdx1, cardOrIdx2):
         #check argument types
         if isinstance(cardOrIdx1, Card) and isinstance(cardOrIdx2, Card):
@@ -672,6 +691,9 @@ class PokerSort:
         move_list.append(
                     (from_card, from_card.x, from_card.y, self.CARDHOLDER_X, from_card.y))
         self.multimove_animate(move_list)
+
+        # keep record
+        self.statistic.insert_add1()
 
     def sort_card_zorder(self):
         
@@ -791,37 +813,37 @@ class Point(int):
         return x
 
     def __eq__(self, other):
-        self.parent.comparision_num += 1
+        self.parent.statistic.compare_add1()
         #print(self.parent.comparision_num)
         self.highlight_cmp(other)
         return int.__eq__(self, other)
 
     def __ne__(self, other):
-        self.parent.comparision_num += 1
+        self.parent.statistic.compare_add1()
         #print(self.parent.comparision_num)
         self.highlight_cmp(other)
         return int.__ne__(self, other)
 
     def __lt__(self, other):
-        self.parent.comparision_num += 1
+        self.parent.statistic.compare_add1()
         #print(self.parent.comparision_num)
         self.highlight_cmp(other)
         return int.__lt__(self, other)
 
     def __gt__(self, other):
-        self.parent.comparision_num += 1
+        self.parent.statistic.compare_add1()
         #print(self.parent.comparision_num)
         self.highlight_cmp(other)
         return int.__gt__(self, other)
 
     def __le__(self, other):
-        self.parent.comparision_num += 1
+        self.parent.statistic.compare_add1()
         #print(self.parent.comparision_num)
         self.highlight_cmp(other)
         return int.__le__(self, other)
 
     def __ge__(self, other):
-        self.parent.comparision_num += 1
+        self.parent.statistic.compare_add1()
         #print(self.parent.comparision_num)
         self.highlight_cmp(other)
         return int.__ge__(self, other)
@@ -834,7 +856,7 @@ class Point(int):
         self.parent.highlight_indexes(idx_list, self.parent.COMPARE_HIGHLIGHT)
 
 class Statistic:
-    STAT_X = 10
+    STAT_X = 15
     STAT_Y = 100
     STAT_X_GAP = 30
 
@@ -846,17 +868,19 @@ class Statistic:
         self.compare_name ='比較'
         self.compare_y = self.STAT_Y
 
-        self.exchange_num = 0 
-        self.exchange_name = '交換'
-        self.exchange_y = self.STAT_Y +self. STAT_X_GAP
+        self.swap_num = 0 
+        self.swap_name = '交換'
+        self.swap_y = self.STAT_Y +self. STAT_X_GAP
 
         self.insert_num = 0
         self.insert_name = '插入'
         self.insert_y = self.STAT_Y + self.STAT_X_GAP * 2
 
+        self.sep_line_y = self.STAT_Y + self.STAT_X_GAP * 3
+
         #self.total_num = 0
         self.total_name = '總計'
-        self.total_y = self.STAT_Y + self.STAT_X_GAP * 3
+        self.total_y = self.STAT_Y + int(self.STAT_X_GAP * 3.5)
 
         self.compare_id = self.parent.canvas.create_text(
                 self.STAT_X,
@@ -866,12 +890,12 @@ class Statistic:
                                         self.compare_num),
                 anchor=tk.NW )
 
-        self.exchange_id = self.parent.canvas.create_text(
+        self.swap_id = self.parent.canvas.create_text(
                 self.STAT_X,
-                self.exchange_y,
+                self.swap_y,
                 font=self.index_font,
-                text='{:s}: {:d}'.format(self.exchange_name,
-                                        self.exchange_num),
+                text='{:s}: {:d}'.format(self.swap_name,
+                                        self.swap_num),
                 anchor=tk.NW )
 
         self.insert_id = self.parent.canvas.create_text(
@@ -882,13 +906,93 @@ class Statistic:
                                         self.insert_num),
                 anchor=tk.NW )
 
+        self.sep_line_id = self.parent.canvas.create_line(
+                 self.STAT_X, self.sep_line_y,
+                 self.STAT_X + 70, self.sep_line_y,
+                )
+
         self.total_id = self.parent.canvas.create_text(
                 self.STAT_X,
                 self.total_y,
                 font=self.index_font,
                 text='{:s}: {:d}'.format(self.total_name,
-                    self.compare_num+self.exchange_num+self.insert_num),
+                    self.compare_num+self.swap_num+self.insert_num),
                 anchor=tk.NW )
 
+        self.hide()
+
+    def show(self):
+        # if self.parent.showing_stat:
+        #     print('<<統計已顯示>>')
+        #     return
+        self.parent.canvas.itemconfigure(
+                self.compare_id, state=tk.NORMAL)
+        self.parent.canvas.itemconfigure(
+                self.swap_id, state=tk.NORMAL)
+        self.parent.canvas.itemconfigure(
+                self.insert_id, state=tk.NORMAL)
+        self.parent.canvas.itemconfigure(
+                self.sep_line_id, state=tk.NORMAL)
+        self.parent.canvas.itemconfigure(
+                self.total_id, state=tk.NORMAL)
+
         self.parent.canvas.update()
+
+    def hide(self):
+        # if not self.parent.showing_stat:
+        #     print('<<統計已隱藏>>')
+        #     return
+        self.parent.canvas.itemconfigure(
+                self.compare_id, state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(
+                self.swap_id, state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(
+                self.insert_id, state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(
+                self.sep_line_id, state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(
+                self.total_id, state=tk.HIDDEN)
+
+        self.parent.canvas.update()
+
+    def compare_add1(self):
+        self.compare_num += 1
+        self.parent.canvas.itemconfigure(self.compare_id,
+                 text='{:s}: {:d}'.format(self.compare_name,
+                                        self.compare_num),
+                 )
+
         
+        self.parent.canvas.itemconfigure(self.total_id,
+                 text='{:s}: {:d}'.format(self.total_name,
+                    self.compare_num+self.swap_num+self.insert_num),
+                 )
+        self.parent.canvas.update()
+
+    def insert_add1(self):
+        self.insert_num += 1
+        self.parent.canvas.itemconfigure(self.insert_id,
+                 text='{:s}: {:d}'.format(self.insert_name,
+                                        self.insert_num),
+                 )
+
+        
+        self.parent.canvas.itemconfigure(self.total_id,
+                 text='{:s}: {:d}'.format(self.total_name,
+                    self.compare_num+self.swap_num+self.insert_num),
+                 )
+        self.parent.canvas.update()
+
+    def swap_add1(self):
+        self.swap_num += 1
+        self.parent.canvas.itemconfigure(self.swap_id,
+                 text='{:s}: {:d}'.format(self.swap_name,
+                                        self.swap_num),
+                 )
+
+        
+        self.parent.canvas.itemconfigure(self.total_id,
+                 text='{:s}: {:d}'.format(self.total_name,
+                    self.compare_num+self.swap_num+self.insert_num),
+                 )
+        self.parent.canvas.update()
