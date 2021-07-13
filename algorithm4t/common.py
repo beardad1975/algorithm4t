@@ -1,4 +1,4 @@
-current_algorithm = ''
+current_algorithm = None
 
 
 

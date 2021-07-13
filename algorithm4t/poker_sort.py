@@ -14,7 +14,7 @@ class 排序撲克錯誤(Exception):
 
 class PokerSort:
     ALGORITHM_NAME = "排序撲克"
-    DEFAULT_CARD_NUM = 4
+    DEFAULT_CARD_NUM = 5
     SPADE14_NAME_LIST = ['back', 
                           'spade1',
                           'spade2',
@@ -97,8 +97,7 @@ class PokerSort:
     LOGO_Y = 0
     LOGO_NAME = 'poker_sort_logo'
 
-    STATISTIC_TEXT_X = 0
-    STATISTIC_TEXT_Y = 500
+    
 
     ANIMATE_FAST = 10
     ANIMATE_NORMAL = 20
@@ -138,11 +137,13 @@ class PokerSort:
 
         self.poker_sorting = False
 
-        self.showing_statistic = True
-        self.comparision_num = 0
-        self.insert_num = 0
-        self.exchange_num = 0
+        self.showing_stat = True
+        self.statistic = None
+        #self.comparision_num = 0
+        #self.insert_num = 0
+        #self.exchange_num = 0
         
+        #self.stat_num_id_list = []
         
 
     def __len__(self):
@@ -224,20 +225,27 @@ class PokerSort:
             else:
                 raise 排序撲克錯誤('\n\n花色名稱{} 錯誤'.format(suit_name))
 
-    def 產生牌組(self, numOrList=None):
+    def 產生牌組(self, numOrList=None, 隨機種子=None):
         # algorithm name detect 
-        if common.current_algorithm:
+        if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME :
             raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n一次只限執行1種演算法")
 
+        
+
         common.current_algorithm =  self.ALGORITHM_NAME
-        self.poker_sorting = True #  start poker sorting
+        
+        if not self.poker_sorting:
+            self.poker_sorting = True #  start poker sorting
+        else:
+            print('<<牌組已產生>>')
+            return
 
         # determine sort_target_list( used by handcards later)
         if numOrList is None:
-            self.sort_target_list = self.random_sample(self.DEFAULT_CARD_NUM)
+            self.sort_target_list = self.random_sample(self.DEFAULT_CARD_NUM, 隨機種子)
         elif type(numOrList) is int:
             if 3 <=  numOrList <= 13:
-                self.sort_target_list = self.random_sample(numOrList)
+                self.sort_target_list = self.random_sample(numOrList, 隨機種子)
             else:
                  raise 排序撲克錯誤("\n\n發牌引數請輸入3~13的張數範圍內. (錯誤值:{})".format(numOrList))
         elif type(numOrList) is list :
@@ -273,13 +281,18 @@ class PokerSort:
         self.gui_init()
         self.calc_cardholder_pos()
         self.prepare_cards()
+        self.prepare_statisic()
+
+    def prepare_statisic(self):
+        self.statistic = Statistic(self)
+        
+        
 
 
-    
-
-
-    def random_sample(self, sample_num):
+    def random_sample(self, sample_num, seed=None):
         one_to_13 = list(range(1,14))
+        if seed is not None :
+            random.seed(seed)
         return random.sample(one_to_13, sample_num)
         
     def calc_cardholder_pos(self):
@@ -302,19 +315,19 @@ class PokerSort:
             self.prepare_cards_list.append(card)
             #self.handcards_list.append(card)
 
-    def show_indexes(self):
-        for i, y in enumerate(self.cardholders_y_list):
-            self.canvas.create_text(
-                self.CARD_INDEX_X,
-                y+10,
-                font=self.index_font,
-                text='['+str(i)+']',
-                anchor=tk.NW,
-            )
-            self.canvas.update()
-            self.delay()
+    # def show_indexes(self):
+    #     for i, y in enumerate(self.cardholders_y_list):
+    #         self.canvas.create_text(
+    #             self.CARD_INDEX_X,
+    #             y+10,
+    #             font=self.index_font,
+    #             text='['+str(i)+']',
+    #             anchor=tk.NW,
+    #         )
+    #         self.canvas.update()
+    #         self.delay()
             
-    def show_text(self,x, y, text, font):
+    def make_text(self,x, y, text, font):
         text_id = self.canvas.create_text(
                 x,
                 y,
@@ -337,6 +350,14 @@ class PokerSort:
         self.root.after(1000, self.__update)
 
     def 發牌(self, 單張=False):
+        if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME:
+            raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n一次只限執行1種演算法")
+        common.current_algorithm =  self.ALGORITHM_NAME
+
+        if not self.poker_sorting:
+            self.產生牌組()
+
+
         if len(self.prepare_cards_list) == 0:
             print('<<牌已發完>>')
             return 
@@ -344,7 +365,7 @@ class PokerSort:
         previous_num = self.handcards_num
 
         if previous_num == 0:
-            self.show_text(self.INDEX_TITLE_X,
+            self.make_text(self.INDEX_TITLE_X,
                             self.INDEX_TITLE_Y,
                             '索引',
                             self.index_font,
@@ -365,7 +386,7 @@ class PokerSort:
             self.move_animate(card, card.x, card.y, self.CARDHOLDER_X, self.cardholders_y_list[previous_num + i])
             card.show()
             # index
-            text_id = self.show_text(self.CARD_INDEX_X,
+            text_id = self.make_text(self.CARD_INDEX_X,
                            self.cardholders_y_list[previous_num + i] + 10,
                            '['+str(previous_num + i)+']',
                            self.index_font,
@@ -811,3 +832,63 @@ class Point(int):
         else:
             idx_list = [self.card.索引值]  
         self.parent.highlight_indexes(idx_list, self.parent.COMPARE_HIGHLIGHT)
+
+class Statistic:
+    STAT_X = 10
+    STAT_Y = 100
+    STAT_X_GAP = 30
+
+    def __init__(self, parent):
+        self.parent = parent
+        self.index_font = font.Font(size=13, weight=font.NORMAL, family='Consolas')
+
+        self.compare_num = 0
+        self.compare_name ='比較'
+        self.compare_y = self.STAT_Y
+
+        self.exchange_num = 0 
+        self.exchange_name = '交換'
+        self.exchange_y = self.STAT_Y +self. STAT_X_GAP
+
+        self.insert_num = 0
+        self.insert_name = '插入'
+        self.insert_y = self.STAT_Y + self.STAT_X_GAP * 2
+
+        #self.total_num = 0
+        self.total_name = '總計'
+        self.total_y = self.STAT_Y + self.STAT_X_GAP * 3
+
+        self.compare_id = self.parent.canvas.create_text(
+                self.STAT_X,
+                self.compare_y,
+                font=self.index_font,
+                text='{:s}: {:d}'.format(self.compare_name,
+                                        self.compare_num),
+                anchor=tk.NW )
+
+        self.exchange_id = self.parent.canvas.create_text(
+                self.STAT_X,
+                self.exchange_y,
+                font=self.index_font,
+                text='{:s}: {:d}'.format(self.exchange_name,
+                                        self.exchange_num),
+                anchor=tk.NW )
+
+        self.insert_id = self.parent.canvas.create_text(
+                self.STAT_X,
+                self.insert_y,
+                font=self.index_font,
+                text='{:s}: {:d}'.format(self.insert_name,
+                                        self.insert_num),
+                anchor=tk.NW )
+
+        self.total_id = self.parent.canvas.create_text(
+                self.STAT_X,
+                self.total_y,
+                font=self.index_font,
+                text='{:s}: {:d}'.format(self.total_name,
+                    self.compare_num+self.exchange_num+self.insert_num),
+                anchor=tk.NW )
+
+        self.parent.canvas.update()
+        
