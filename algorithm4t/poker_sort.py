@@ -98,10 +98,12 @@ class PokerSort:
     LOGO_NAME = 'poker_sort_logo'
 
     CHECK_X = 175
-    
+    CHECK_PERIOD_FAST = 0.1 # sec
+    CHECK_PERIOD_NORMAL = 0.2
+    CHECK_PERIOD_SLOW = 0.4
     RESULT_X = 10
     RESULT_Y = 300
-    RESULT_BLINK_TIME = 700
+    RESULT_BLINK_TIME = 700 # ms
 
     ANIMATE_FAST = 10
     ANIMATE_NORMAL = 20
@@ -148,6 +150,7 @@ class PokerSort:
         self.result_text_id = None
         self.result_showing = False
         
+        self.check_period = self.CHECK_PERIOD_NORMAL
 
     def __len__(self):
         return self.handcards_num
@@ -209,12 +212,15 @@ class PokerSort:
         if speed == 'normal':
             self.animate_speed = self.ANIMATE_NORMAL
             self.multi_animate_speed = self.MULTI_ANIMATE_NORMAL
+            self.check_period = self.CHECK_PERIOD_NORMAL
         elif speed == 'fast':
             self.animate_speed = self.ANIMATE_FAST
             self.multi_animate_speed = self.MULTI_ANIMATE_FAST
+            self.check_period = self.CHECK_PERIOD_FAST
         elif speed == 'slow':
             self.animate_speed = self.ANIMATE_SLOW
             self.multi_animate_speed = self.MULTI_ANIMATE_SLOW
+            self.check_period = self.CHECK_PERIOD_SLOW
         else:
             raise 排序撲克錯誤("\n\n速度引數應為fast, normal或slow. (錯誤值:{})".format(speed))
 
@@ -444,7 +450,7 @@ class PokerSort:
                 #print(card_point_list)
                 #print('head forward: ', head_forward_counter)
                 break
-        print('head forward: ', head_forward_counter)
+        #print('head forward: ', head_forward_counter)
 
         # count: head reverse
         head_reverse_counter = 0
@@ -456,7 +462,7 @@ class PokerSort:
                 # print(card_point_list)
                 # print('head reverse: ', head_reverse_counter)
                 break
-        print('head reverse: ', head_reverse_counter)
+        #print('head reverse: ', head_reverse_counter)
 
         # count: tail forward
         tail_forward_counter = 0
@@ -468,7 +474,7 @@ class PokerSort:
                 # print(card_point_list)
                 # print('tail forward: ', tail_forward_counter)
                 break   
-        print('tail forward: ', tail_forward_counter)
+        #print('tail forward: ', tail_forward_counter)
 
         # count: tail reverse
         tail_reverse_counter = 0
@@ -480,7 +486,7 @@ class PokerSort:
                 # print(card_point_list)
                 # print('tail reverse: ', tail_reverse_counter)
                 break 
-        print('tail reverse: ', tail_reverse_counter)  
+        #print('tail reverse: ', tail_reverse_counter)  
 
         if head_forward_counter > self.result_checked_num:
             self.result_checked_num = head_forward_counter
@@ -498,7 +504,7 @@ class PokerSort:
             self.result_checked_num = tail_reverse_counter
             self.result_checked_start = "tail" 
 
-        print(self.result_checked_start, self.result_checked_num)   
+        #print(self.result_checked_start, self.result_checked_num)   
 
     def check_animate(self):
         if self.result_checked_num <= 0:
@@ -516,7 +522,7 @@ class PokerSort:
                     anchor=tk.NW,
                 )
                 self.canvas.update()
-                time.sleep(0.25)
+                time.sleep(self.check_period)
         elif self.result_checked_start == 'tail':
             tail_range = range(self.handcards_num-self.result_checked_num  , self.handcards_num)
             for i in reversed(tail_range):
