@@ -99,6 +99,9 @@ class PokerSort:
 
     CHECK_X = 175
     
+    RESULT_X = 10
+    RESULT_Y = 300
+    RESULT_BLINK_TIME = 700
 
     ANIMATE_FAST = 10
     ANIMATE_NORMAL = 20
@@ -142,6 +145,9 @@ class PokerSort:
         self.statistic = None
         self.result_checked_start = None
         self.result_checked_num = 0
+        self.result_text_id = None
+        self.result_showing = False
+        
 
     def __len__(self):
         return self.handcards_num
@@ -524,8 +530,46 @@ class PokerSort:
                 time.sleep(0.25)
         
     def show_result(self):
-        pass
-           
+        if self.result_checked_num < 0:
+            return
+        elif 0 <= self.result_checked_num < self.handcards_num:
+            result_text = '排序\n{}張'.format(self.result_checked_num)
+        elif self.result_checked_num == self.handcards_num :
+            result_text = '排序\n完成'
+
+        self.result_id = self.make_text(
+                            self.RESULT_X,
+                            self.RESULT_Y,
+                            result_text,
+                            self.result_font,
+                            )
+        self.canvas.itemconfigure(
+                            self.result_id,
+                            fill = 'red',
+                            justify = tk.CENTER,
+                            )
+        self.result_showing = True
+        self.canvas.after(self.RESULT_BLINK_TIME, 
+                            self.blink_result)
+
+    def blink_result(self):
+        
+        if self.result_showing:
+            self.canvas.itemconfigure(
+                            self.result_id,
+                            state = tk.HIDDEN
+                            ) 
+            #print('hidden')        
+        else:
+            self.canvas.itemconfigure(
+                            self.result_id,
+                            state = tk.NORMAL
+                            )
+            #print('normal')
+        self.canvas.update()
+        self.result_showing = not self.result_showing
+        self.canvas.after(self.RESULT_BLINK_TIME,
+                            self.blink_result)
 
     def move_animate(self, card, x0, y0, x1, y1):
         # move animate card from (x0, y0) to (x1, y1)
@@ -578,6 +622,8 @@ class PokerSort:
         # tk canvas init
         self.root = tk.Tk()
         self.index_font = font.Font(size=13, weight=font.NORMAL, family='Consolas')
+        self.result_font = font.Font(size=55, weight=font.NORMAL, family='Consolas')
+        
         self.root.geometry("{}x{}+0+0".format(self.canvas_width,self.canvas_height))
         self.canvas = tk.Canvas(self.root, bg = '#c7fcda',
                width=self.canvas_width, height=self.canvas_height,
