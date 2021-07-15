@@ -18,12 +18,19 @@ class SearchGuess:
 
     BACKGROUND_NAME = 'search_guess_bg'
     LOGO_NAME = 'search_guess_logo'
+    RULER_NAME = 'ruler'
 
     DEFAULT_LOWER_BOUND = 0
     DEFAULT_UPPER_BOUND = 99
 
     LOGO_X = 50
     LOGO_Y = 0
+
+    RULER_X = 150
+    RULER_Y = 150
+
+    PUZZLE_X = 200
+    PUZZLE_Y = 90
 
     
     def __init__(self):
@@ -61,7 +68,7 @@ class SearchGuess:
 
     def gui_init(self):
         self.root = tk.Tk()
-        self.normal_font = font.Font(size=13, weight=font.NORMAL, family='Consolas')
+        self.normal_font = font.Font(size=14, weight=font.NORMAL, family='Consolas')
         self.result_font = font.Font(size=55, weight=font.NORMAL, family='Consolas')
         self.root.geometry("{}x{}+0+0".format(self.CANVAS_WIDTH,  self.CANVAS_HEIGHT))
         self.canvas = tk.Canvas(self.root,
@@ -72,7 +79,30 @@ class SearchGuess:
 
 
     def set_assets(self):
-        pass
+        # put ruler
+        path = Path(__file__).parent / 'images' / (self.RULER_NAME + '.png')     
+        _im = Image.open(path)
+        self.ruler_img = ImageTk.PhotoImage(_im)
+        self.ruler_id = self.canvas.create_image(
+                self.RULER_X,
+                self.RULER_Y,
+                image=self.ruler_img,
+                anchor=tk.NW )
+
+        # put puzzle
+        puzzle_text = '請猜出範圍{}~{}內的整數答案'.format(
+                    self.puzzle_lower_bound,
+                    self.puzzle_upper_bound
+                    )
+        self.puzzle_id = self.canvas.create_text(
+                self.PUZZLE_X,
+                self.PUZZLE_Y,
+                font=self.normal_font,
+                text=puzzle_text,
+                anchor=tk.CENTER,
+                justify=tk.CENTER )
+        
+        # load arrow and hide
 
 
     def set_background(self):
