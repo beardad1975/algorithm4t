@@ -14,6 +14,11 @@ class 排序撲克錯誤(Exception):
 
 class PokerSort:
     ALGORITHM_NAME = "排序撲克"
+    CANVAS_WIDTH = 400
+    CANVAS_HEIGHT = 800
+
+    BACKGROUND_NAME = 'poker_sort_bg'
+
     DEFAULT_CARD_NUM = 5
     SPADE14_NAME_LIST = ['back', 
                           'spade1',
@@ -119,8 +124,8 @@ class PokerSort:
 
     def __init__(self):            
         #self.fold_mode = False
-        self.canvas_width = common.poker_canvas_width + 1
-        self.canvas_height = common.poker_canvas_height + 1
+        #self.canvas_width = common.poker_canvas_width + 1
+        #self.canvas_height = common.poker_canvas_height + 1
         self.suit_name = 'random'  
         self.card14_name_list = []
         self.card14_img_list = []
@@ -237,10 +242,7 @@ class PokerSort:
     def 產生牌組(self, numOrList=None, 隨機種子=None):
         # algorithm name detect 
         if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME :
-            raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n一次只限執行1種演算法")
-
-        
-
+            raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n無法同時執行"+self.ALGORITHM_NAME)
         common.current_algorithm =  self.ALGORITHM_NAME
         
         if not self.poker_sorting:
@@ -286,14 +288,31 @@ class PokerSort:
         #print('發牌: ',self.sort_target_list)
         #self.handcards_num = len(self.sort_target_list)
 
+        self._do_init()
+
+    def _do_init(self):
+
         # tk and images
         self.gui_init()
+        self.set_background()
+        self.set_logo()
         self.calc_cardholder_pos()
-        self.prepare_cards()
-        self.prepare_statisic()
-        
+        self.set_cards()
+        self.set_statisic()
 
-    def prepare_statisic(self):
+    def set_background(self):
+        path = Path(__file__).parent / 'images' / (self.BACKGROUND_NAME + '.png')
+                
+        _im = Image.open(path)
+        self.bg_img = ImageTk.PhotoImage(_im)
+        self.bg_id = self.canvas.create_image(
+                0,
+                0,
+                image=self.bg_img,
+                anchor=tk.NW,
+                )    
+
+    def set_statisic(self):
         self.statistic = Statistic(self)
 
         if self.showing_stat:
@@ -319,7 +338,7 @@ class PokerSort:
         for i in range(sort_target_num):
             self.cardholders_y_list.append(self.CARDHOLDER_MIN_Y + cardholder_intervals * i)
 
-    def prepare_cards(self):
+    def set_cards(self):
         tmp_list = reversed(self.sort_target_list)
         for idx, point in enumerate(tmp_list):
             card = Card(self.CARD_PREPARE_X, 
@@ -365,9 +384,9 @@ class PokerSort:
         self.root.after(1000, self.__update)
 
     def 發牌(self, 單張=False):
-        if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME:
-            raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n一次只限執行1種演算法")
-        common.current_algorithm =  self.ALGORITHM_NAME
+        # if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME:
+        #     raise 排序撲克錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n一次只限執行1種演算法")
+        # common.current_algorithm =  self.ALGORITHM_NAME
 
         if not self.poker_sorting:
             self.產生牌組()
@@ -630,15 +649,15 @@ class PokerSort:
         self.index_font = font.Font(size=13, weight=font.NORMAL, family='Consolas')
         self.result_font = font.Font(size=55, weight=font.NORMAL, family='Consolas')
         
-        self.root.geometry("{}x{}+0+0".format(self.canvas_width,self.canvas_height))
+        self.root.geometry("{}x{}+0+0".format(self.CANVAS_WIDTH,self.CANVAS_HEIGHT))
         self.canvas = tk.Canvas(self.root, bg = '#c7fcda',
-               width=self.canvas_width, height=self.canvas_height,
+               width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT,
                )
         self.canvas.pack()
 
         #load card images
         self.load_card_images()
-        self.prepare_logo()
+        
 
         #determine cards
         
@@ -655,7 +674,7 @@ class PokerSort:
         #self.root.after(1000, self.__update)
 
 
-    def prepare_logo(self):
+    def set_logo(self):
         path = Path(__file__).parent / 'images' / (self.LOGO_NAME + '.png')
         
         
@@ -937,7 +956,7 @@ class Card:
         self.fold()
 
     def set_position(self, x, y):
-        width, height = common.poker_canvas_width, common.poker_canvas_height
+        width, height = self.parent.CANVAS_WIDTH, self.parent.CANVAS_HEIGHT
         if not 0 <= x <= width or not 0 <= y <= height:
             print('<< 座標超過範圍(0~{},0~{})>>'.format(width, height))
             return
