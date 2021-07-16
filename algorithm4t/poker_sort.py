@@ -646,10 +646,18 @@ class PokerSort:
     def gui_init(self):
         # tk canvas init
         self.root = tk.Tk()
+
+        # screen_width = self.root.winfo_screenwidth()
+        # screen_height = self.root.winfo_screenheight()
+        # print('screen: ', screen_width, screen_height)
+
         self.index_font = font.Font(size=13, weight=font.NORMAL, family='Consolas')
         self.result_font = font.Font(size=55, weight=font.NORMAL, family='Consolas')
         
-        self.root.geometry("{}x{}+0+0".format(self.CANVAS_WIDTH,self.CANVAS_HEIGHT))
+        self.root.geometry("{}x{}+0+0".format(self.CANVAS_WIDTH,
+                                              self.CANVAS_HEIGHT,
+                                              
+                                              ))
         self.canvas = tk.Canvas(self.root, bg = '#c7fcda',
                width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT,
                )

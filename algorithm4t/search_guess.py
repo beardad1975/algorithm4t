@@ -5,6 +5,7 @@ import random
 from PIL import Image, ImageTk
 from pathlib import Path
 import time
+from itertools import cycle
 
 from . import common
 
@@ -20,8 +21,8 @@ class SearchGuess:
     LOGO_NAME = 'search_guess_logo'
     RULER_NAME = 'ruler'
 
-    DEFAULT_LOWER_BOUND = 0
-    DEFAULT_UPPER_BOUND = 99
+    DEFAULT_LOWER_BOUND = 100
+    DEFAULT_UPPER_BOUND = 150
 
     LOGO_X = 50
     LOGO_Y = 0
@@ -32,8 +33,8 @@ class SearchGuess:
     PUZZLE_X = 200
     PUZZLE_Y = 90
 
-    BAR_COLOR = '#349beb'
-    
+    COLOR_LIST = ['#349beb','#eb02eb','#11db02','#fc8c03',]
+    COLOR_POOL = cycle(COLOR_LIST)
 
     BAR_X = 160
     BAR_WIDTH = 30
@@ -46,6 +47,11 @@ class SearchGuess:
     THIN_BAR_X = BAR_X_RIGHT + THIN_BAR_GAP
     THIN_BAR_X_RIGHT = THIN_BAR_X + THIN_BAR_WIDTH
 
+    LINE_X = 20
+    BOUND_TEXT_X = 35
+    
+    LOWER_BOUND_TEXT_SHIFTY = 8
+    UPPER_BOUND_TEXT_SHIFTY = -50
     
     def __init__(self):
         self.puzzle_answer = None  # bin str
@@ -53,9 +59,10 @@ class SearchGuess:
         self.puzzle_upper_bound = None
         self.answer_lower_bound = None
         self.answer_upper_bound = None
-        self.puzzle_bound_delta = None
+        self.bound_delta = None
         self.bar_id = None
         self.thin_bar_id = None
+        self.current_color = next(self.COLOR_POOL)
 
     def 產生題目(self, *args, **kwargs):
         if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME :
@@ -64,10 +71,10 @@ class SearchGuess:
 
         if len(args) == 0:
             self.puzzle_lower_bound = self.DEFAULT_LOWER_BOUND
-            
+            self.answer_lower_bound = self.DEFAULT_LOWER_BOUND
             self.puzzle_upper_bound = self.DEFAULT_UPPER_BOUND
-            
-            self.puzzle_bound_delta = self.puzzle_upper_bound - self.puzzle_lower_bound
+            self.answer_upper_bound = self.DEFAULT_UPPER_BOUND
+            self.bound_delta = self.answer_upper_bound - self.answer_lower_bound
             if '隨機種子' in kwargs:
                 #print('seed: ', kwargs['隨機種子'])
                 random.seed(kwargs['隨機種子'])
@@ -95,17 +102,69 @@ class SearchGuess:
 
         
     def bar_init(self):
-        # bar 
-        for i in range(1,60, 1):
-            self.redraw_bar(0, i)
+        # create lower bound line dot and text
+        self.lower_bound_lineid = self.canvas.create_line(
+                self.LINE_X, self.BAR_MAX_Y, 
+                self.THIN_BAR_X_RIGHT, self.BAR_MAX_Y,
+                fill=self.current_color,
+                
+                width=2,
+                dash=(7,))
+        self.lower_bound_dotid = self.canvas.create_oval(
+                self.LINE_X - 6 , self.BAR_MAX_Y - 6, 
+                self.LINE_X + 5, self.BAR_MAX_Y + 5,
+                fill=self.current_color,
+                width=0)
+        self.lower_bound_textid = self.canvas.create_text(
+                self.BOUND_TEXT_X , 
+                self.BAR_MAX_Y + self.LOWER_BOUND_TEXT_SHIFTY,
+                anchor=tk.NW,
+                justify=tk.CENTER,
+                font = self.normal_font,
+                text='{}\n答案下限'.format(self.puzzle_lower_bound))
+        
+        # create upper bound line dot and text
+        self.upper_bound_lineid = self.canvas.create_line(
+                self.LINE_X, self.BAR_MAX_Y, 
+                self.THIN_BAR_X_RIGHT, self.BAR_MAX_Y,
+                fill=self.current_color,
+                
+                width=2,
+                dash=(7,)
+                )
+        self.upper_bound_dotid = self.canvas.create_oval(
+                self.LINE_X - 6 , self.BAR_MAX_Y - 6, 
+                self.LINE_X + 5, self.BAR_MAX_Y + 5,
+                fill=self.current_color,
+                width=0, )
+        self.upper_bound_textid = self.canvas.create_text(
+                self.BOUND_TEXT_X , 
+                self.BAR_MAX_Y + self.UPPER_BOUND_TEXT_SHIFTY,
+                anchor=tk.NW,
+                justify=tk.CENTER,
+                font = self.normal_font,
+                text='答案上限\n{}'.format(self.puzzle_upper_bound))
+
+
+        # animate bar from lower bound to upper bound 
+        if self.bound_delta < 100:
+            num_step = 1
+
+        for n in range(self.answer_lower_bound, 
+                       self.answer_upper_bound + 1,
+                       num_step):
+            self.redraw_bar(self.answer_lower_bound, n)
+
+        
 
     def redraw_bar(self, lower_num, upper_num):
-        if lower_num == upper_num :
-            print('redraw_bar: lowernum == upper_num')
-            return
+        if lower_num > upper_num :
+            raise 搜尋猜數錯誤('redraw_bar: lowernum > upper_num')
 
-        if lower_num > upper_num:
-            raise 搜尋猜數錯誤 
+        if type(lower_num) is not int or type(upper_num) is not int:
+            raise 搜尋猜數錯誤('redraw_bar: lowernum or upper_num not int')
+
+        
 
         if self.bar_id is not None:
             self.canvas.delete(self.bar_id)
@@ -118,14 +177,16 @@ class SearchGuess:
         big_y = self.num2y(lower_num)
         small_y = self.num2y(upper_num)
 
+        
+
+        # redarw bar and thin bar 
         self.bar_id = self.canvas.create_rectangle(
                         self.BAR_X, 
                         small_y,
                         self.BAR_X_RIGHT, 
                         big_y,
                         width=0,    
-                        fill=self.BAR_COLOR,
-                    )
+                        fill=self.current_color,)
 
         self.thin_bar_id = self.canvas.create_rectangle(
                         self.THIN_BAR_X, 
@@ -133,19 +194,61 @@ class SearchGuess:
                         self.THIN_BAR_X_RIGHT, 
                         big_y,
                         width=0,    
-                        fill=self.BAR_COLOR,
-                    )
+                        fill=self.current_color,)
+        
+        # update upper bound line, dot and text
+        self.canvas.coords(self.upper_bound_lineid, 
+                           self.LINE_X, 
+                           small_y,
+                           self.THIN_BAR_X_RIGHT, 
+                           small_y, )
+        self.canvas.itemconfigure(self.upper_bound_lineid,
+                        fill=self.current_color,)
+
+        self.canvas.coords(self.upper_bound_dotid,
+                self.LINE_X - 6 , small_y - 6, 
+                self.LINE_X + 5, small_y + 5 )
+        self.canvas.itemconfigure(self.upper_bound_dotid,
+                        fill=self.current_color,)
+        
+        self.canvas.coords(self.upper_bound_textid,
+                self.BOUND_TEXT_X , 
+                small_y + self.UPPER_BOUND_TEXT_SHIFTY,)
+        self.canvas.itemconfigure(self.upper_bound_textid,
+                text='答案上限\n{}'.format(upper_num) )
+
+        # update lower bound line, dot and text
+        self.canvas.coords(self.lower_bound_lineid, 
+                           self.LINE_X, 
+                           big_y,
+                           self.THIN_BAR_X_RIGHT, 
+                           big_y, )
+        self.canvas.itemconfigure(self.lower_bound_lineid,
+                        fill=self.current_color,)
+
+        self.canvas.coords(self.lower_bound_dotid,
+                self.LINE_X - 6 , big_y - 6, 
+                self.LINE_X + 5, big_y + 5 )
+        self.canvas.itemconfigure(self.lower_bound_dotid,
+                        fill=self.current_color,)
+        
+        self.canvas.coords(self.lower_bound_textid,
+                self.BOUND_TEXT_X , 
+                big_y + self.LOWER_BOUND_TEXT_SHIFTY,)
+        self.canvas.itemconfigure(self.lower_bound_textid,
+                text='{}\n答案下限'.format(lower_num) )
 
         self.canvas.update()
         self.delay()
 
-    def adjust_lower_bound(self, new_y):
-        pass
+    def adjust_upper_bound(self, value):
+        if value > self.puzzle_upper_bound:
+            raise 搜尋猜數錯誤
 
 
     def num2y(self, n):
         # to do :value check
-        tmp =  self.BAR_MAX_Y - n* self.BAR_MAX_HEIGHT / self.puzzle_bound_delta 
+        tmp =  self.BAR_MAX_Y - (n-self.answer_lower_bound)* self.BAR_MAX_HEIGHT / self.bound_delta 
         return int(tmp)
 
     def gui_init(self):
