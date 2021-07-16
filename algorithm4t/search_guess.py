@@ -20,15 +20,18 @@ class SearchGuess:
     BACKGROUND_NAME = 'search_guess_bg'
     LOGO_NAME = 'search_guess_logo'
     RULER_NAME = 'ruler'
+    ARROW_NAME = 'search_arrow'
 
-    DEFAULT_LOWER_BOUND = 100
-    DEFAULT_UPPER_BOUND = 150
+    DEFAULT_LOWER_BOUND = 0
+    DEFAULT_UPPER_BOUND = 100
 
     LOGO_X = 50
     LOGO_Y = 0
 
     RULER_X = 150
     RULER_Y = 160
+
+
 
     PUZZLE_X = 200
     PUZZLE_Y = 90
@@ -49,7 +52,11 @@ class SearchGuess:
 
     LINE_X = 20
     BOUND_TEXT_X = 35
+
+    RULER_TEXT_X = 225
     
+    ARROW_X = 220
+
     LOWER_BOUND_TEXT_SHIFTY = 8
     UPPER_BOUND_TEXT_SHIFTY = -50
     
@@ -57,12 +64,17 @@ class SearchGuess:
         self.puzzle_answer = None  # bin str
         self.puzzle_lower_bound = None
         self.puzzle_upper_bound = None
-        self.answer_lower_bound = None
-        self.answer_upper_bound = None
-        self.bound_delta = None
+        self.ruler_lower_bound = None
+        self.ruler_upper_bound = None
+        self.ruler_bound_delta = None
+        self.lower_bound = None 
+        self.upper_bound = None
+        
         self.bar_id = None
         self.thin_bar_id = None
         self.current_color = next(self.COLOR_POOL)
+
+        self.arrow_num = None
 
     def 產生題目(self, *args, **kwargs):
         if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME :
@@ -71,10 +83,15 @@ class SearchGuess:
 
         if len(args) == 0:
             self.puzzle_lower_bound = self.DEFAULT_LOWER_BOUND
-            self.answer_lower_bound = self.DEFAULT_LOWER_BOUND
             self.puzzle_upper_bound = self.DEFAULT_UPPER_BOUND
-            self.answer_upper_bound = self.DEFAULT_UPPER_BOUND
-            self.bound_delta = self.answer_upper_bound - self.answer_lower_bound
+
+            self.ruler_lower_bound = self.puzzle_lower_bound
+            self.ruler_upper_bound = self.puzzle_upper_bound
+            self.ruler_bound_delta = self.ruler_upper_bound - self.ruler_lower_bound
+
+            self.lower_bound = self.puzzle_lower_bound
+            self.upper_bound = self.puzzle_upper_bound
+            
             if '隨機種子' in kwargs:
                 #print('seed: ', kwargs['隨機種子'])
                 random.seed(kwargs['隨機種子'])
@@ -97,11 +114,13 @@ class SearchGuess:
         self.set_background()
         self.set_logo()
         self.set_assets()
-        self.bar_init()
-        #self.adjsut_lower_bound(new_y)
-
+        self.ruler_init()
         
-    def bar_init(self):
+        #test
+        # self.flex_upper_bound(43)
+        # self.flex_lower_bound(20)
+        
+    def ruler_init(self):
         # create lower bound line dot and text
         self.lower_bound_lineid = self.canvas.create_line(
                 self.LINE_X, self.BAR_MAX_Y, 
@@ -121,7 +140,7 @@ class SearchGuess:
                 anchor=tk.NW,
                 justify=tk.CENTER,
                 font = self.normal_font,
-                text='{}\n答案下限'.format(self.puzzle_lower_bound))
+                text='{}\n答案下限'.format(self.ruler_lower_bound))
         
         # create upper bound line dot and text
         self.upper_bound_lineid = self.canvas.create_line(
@@ -143,21 +162,44 @@ class SearchGuess:
                 anchor=tk.NW,
                 justify=tk.CENTER,
                 font = self.normal_font,
-                text='答案上限\n{}'.format(self.puzzle_upper_bound))
+                text='答案上限\n{}'.format(self.ruler_upper_bound))
 
+        # ruler text
+        self.ruler_upper_textid = self.canvas.create_text(
+                self.RULER_TEXT_X , 
+                self.BAR_MIN_Y,
+                anchor=tk.W,
+                justify=tk.LEFT,
+                font = self.small_font,
+                text='{}'.format(self.ruler_upper_bound))
+
+        self.ruler_lower_textid = self.canvas.create_text(
+                self.RULER_TEXT_X , 
+                self.BAR_MAX_Y,
+                anchor=tk.W,
+                justify=tk.LEFT,
+                font = self.small_font,
+                text='{}'.format(self.ruler_lower_bound))
+
+        # raise arrow above ruler text
+        self.canvas.tag_raise(self.ruler_upper_textid, self.ruler_lower_textid)
+        self.canvas.tag_raise(self.arrow_id, self.ruler_upper_textid)
 
         # animate bar from lower bound to upper bound 
-        if self.bound_delta < 100:
-            num_step = 1
 
-        for n in range(self.answer_lower_bound, 
-                       self.answer_upper_bound + 1,
+        if self.ruler_bound_delta <= 100:
+            num_step = 1
+        else:
+            num_step = 2
+
+        for n in range(self.ruler_lower_bound, 
+                       self.ruler_upper_bound + 1,
                        num_step):
-            self.redraw_bar(self.answer_lower_bound, n)
+            self.draw_ruler(self.ruler_lower_bound, n)
 
         
 
-    def redraw_bar(self, lower_num, upper_num):
+    def draw_ruler(self, lower_num, upper_num):
         if lower_num > upper_num :
             raise 搜尋猜數錯誤('redraw_bar: lowernum > upper_num')
 
@@ -165,7 +207,7 @@ class SearchGuess:
             raise 搜尋猜數錯誤('redraw_bar: lowernum or upper_num not int')
 
         
-
+        # delete old bar if necessary
         if self.bar_id is not None:
             self.canvas.delete(self.bar_id)
             self.bar_id = None
@@ -241,18 +283,41 @@ class SearchGuess:
         self.canvas.update()
         self.delay()
 
-    def adjust_upper_bound(self, value):
-        if value > self.puzzle_upper_bound:
-            raise 搜尋猜數錯誤
+    def flex_upper_bound(self, value):
+        if value == self.upper_bound or value == self.lower_bound:
+            return
+
+        if not self.lower_bound < value < self.upper_bound:
+            raise 搜尋猜數錯誤(f"exceed ruler range")
+
+        for n in range(self.upper_bound, value-1, -1):
+            self.draw_ruler(self.lower_bound, n)
+
+        self.upper_bound = value
+
+
+    def flex_lower_bound(self, value):
+        if value == self.upper_bound or value == self.lower_bound:
+            return
+
+        if not self.lower_bound < value < self.upper_bound:
+            raise 搜尋猜數錯誤(f"exceed ruler range")
+
+        for n in range(self.lower_bound, value+1):
+            self.draw_ruler( n, self.upper_bound)
+
+        self.lower_bound = value
 
 
     def num2y(self, n):
+        # number map to coordinate y
         # to do :value check
-        tmp =  self.BAR_MAX_Y - (n-self.answer_lower_bound)* self.BAR_MAX_HEIGHT / self.bound_delta 
+        tmp =  self.BAR_MAX_Y - (n-self.ruler_lower_bound)* self.BAR_MAX_HEIGHT / self.ruler_bound_delta 
         return int(tmp)
 
     def gui_init(self):
         self.root = tk.Tk()
+        self.small_font = font.Font(size=12, weight=font.NORMAL, family='Consolas')
         self.normal_font = font.Font(size=14, weight=font.NORMAL, family='Consolas')
         self.result_font = font.Font(size=55, weight=font.NORMAL, family='Consolas')
         self.root.geometry("{}x{}+0+0".format(self.CANVAS_WIDTH,  self.CANVAS_HEIGHT))
@@ -287,7 +352,16 @@ class SearchGuess:
                 anchor=tk.CENTER,
                 justify=tk.CENTER )
         
-        # load arrow and hide
+        # load arrow 
+        path = Path(__file__).parent / 'images' / (self.ARROW_NAME + '.png')     
+        _im = Image.open(path)
+        self.arrow_img = ImageTk.PhotoImage(_im)
+        self.arrow_id = self.canvas.create_image(
+                self.ARROW_X,
+                self.BAR_MAX_Y,
+                image=self.arrow_img,
+                anchor=tk.W )
+        
 
          
         # self.bar_id = self.canvas.create_rectangle(
