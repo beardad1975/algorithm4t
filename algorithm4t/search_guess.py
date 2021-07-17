@@ -1,11 +1,13 @@
 import sys
+import random
+import time
+import math
+from itertools import cycle
+from pathlib import Path
+
 import tkinter as tk
 import tkinter.font as font
-import random
 from PIL import Image, ImageTk
-from pathlib import Path
-import time
-from itertools import cycle
 
 from . import common
 
@@ -74,9 +76,12 @@ class BiSearchGuess:
         #self.ruler_init()
         
         #test
-        self.bisearch_ruler.set_lowbound(100)
-        self.bisearch_ruler.set_upbound(109)
+        # self.bisearch_ruler.set_lowbound(100)
+        # self.bisearch_ruler.set_upbound(109)
+        for i in range(1,3):
+            self.bisearch_ruler.calc_ruler_scale(10345, 10345+i*10)
         
+
         #self.change_scale(11,80)
 
     def set_puzzle_note(self):
@@ -173,6 +178,7 @@ class BiSearchRuler:
         self.ruler_upbound = self.parent.puzzle_upbound
         self.ruler_bound_delta = self.ruler_upbound - self.ruler_lowbound
         
+
         self.lowbound = self.ruler_lowbound
         self.upbound = self.ruler_upbound
        
@@ -318,7 +324,8 @@ class BiSearchRuler:
             return
 
         if value <= self.lowbound :
-            print('<<上限需大於下限>>')    
+            print('<<上限需大於下限>>') 
+            return   
 
         # if not self.puzzle_lower_bound < value < self.puzzle_upper_bound:
         #     raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
@@ -474,8 +481,8 @@ class BiSearchRuler:
             self.parent.canvas.delete(self.thin_bar_id)
             self.thin_bar_id = None
 
-        big_y = self.num2y(lower_num)
-        small_y = self.num2y(upper_num)
+        big_y = self.num2y(self.ruler_lowbound, self.ruler_bound_delta, lower_num)
+        small_y = self.num2y(self.ruler_lowbound, self.ruler_bound_delta, upper_num)
 
         
 
@@ -571,12 +578,53 @@ class BiSearchRuler:
         self.delay() 
 
 
-    def num2y(self, n):
+    def num2y(self, lowbound, delta, n):
+        # 
+        # delta: upbound - lowbound
         # number map to coordinate y
         # to do :value check
-        tmp =  self.BAR_MAX_Y - (n-self.ruler_lowbound)* self.BAR_MAX_HEIGHT / self.ruler_bound_delta 
+        tmp =  self.BAR_MAX_Y - (n - lowbound) * self.BAR_MAX_HEIGHT / delta 
         return int(tmp)      
 
     def delay(self, sec=0.0001):
         #pass
         time.sleep(sec) 
+
+    def calc_ruler_scale(self, lower_num, upper_num):
+        # return base, range_exp10 
+        # base
+        # range_exp10:could be 1 2 3 ...
+
+        if upper_num <=  lower_num:
+            raise 搜尋猜數錯誤
+
+        #print('--------------')
+        #print('low-up: ',lower_num, upper_num)
+        delta_exp10 = math.log10(upper_num - lower_num)
+        #print('delta: ', upper_num - lower_num)
+        #print('delta_exp10: ',delta_exp10)
+        
+        # calc range_delta
+        range_exp10 = math.ceil(delta_exp10)
+        if range_exp10 < 1:
+            # min exp10 : 1
+            range_exp10 = 1
+
+        # calc base
+        down_grade = range_exp10 - 1
+        if down_grade < 1:
+            down_grade = 1
+        remainder =  lower_num % (10 ** (down_grade))
+        base = int(lower_num - remainder)
+        
+
+        # check outside range special case
+        if upper_num > base + 10 ** range_exp10 :
+            # upgrade exp
+            #print('out range : exp10 ++')
+            range_exp10 += 1
+
+        #print('base, range_exp10: ', base, range_exp10)
+        return base, range_exp10
+
+        
