@@ -51,6 +51,7 @@ class SearchGuess:
     THIN_BAR_X_RIGHT = THIN_BAR_X + THIN_BAR_WIDTH
 
     LINE_X = 20
+    CHANGE_SCALE_TEXT_X = 30
     BOUND_TEXT_X = 35
 
     RULER_TEXT_X = 225
@@ -59,14 +60,19 @@ class SearchGuess:
 
     LOWER_BOUND_TEXT_SHIFTY = 8
     UPPER_BOUND_TEXT_SHIFTY = -50
+
+    MIN_SCALE_DELTA = 10
+    ZOOM_IN_RATE = 0.03
     
     def __init__(self):
-        self.puzzle_answer = None  # bin str
         self.puzzle_lower_bound = None
         self.puzzle_upper_bound = None
+        self.puzzle_answer = None  # bin str
+        
         self.ruler_lower_bound = None
         self.ruler_upper_bound = None
         self.ruler_bound_delta = None
+        
         self.lower_bound = None 
         self.upper_bound = None
         
@@ -75,6 +81,7 @@ class SearchGuess:
         self.current_color = next(self.COLOR_POOL)
 
         self.arrow_num = None
+        self.arrow_visible =None
 
     def 產生題目(self, *args, **kwargs):
         if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME :
@@ -117,8 +124,10 @@ class SearchGuess:
         self.ruler_init()
         
         #test
-        # self.flex_upper_bound(43)
-        # self.flex_lower_bound(20)
+        self.change_lower_bound(20)
+        self.change_upper_bound(21)
+        
+        #self.change_scale(11,80)
         
     def ruler_init(self):
         # create lower bound line dot and text
@@ -126,28 +135,30 @@ class SearchGuess:
                 self.LINE_X, self.BAR_MAX_Y, 
                 self.THIN_BAR_X_RIGHT, self.BAR_MAX_Y,
                 fill=self.current_color,
-                
+                state=tk.NORMAL,
                 width=2,
                 dash=(7,))
         self.lower_bound_dotid = self.canvas.create_oval(
                 self.LINE_X - 6 , self.BAR_MAX_Y - 6, 
                 self.LINE_X + 5, self.BAR_MAX_Y + 5,
                 fill=self.current_color,
+                state=tk.NORMAL,
                 width=0)
         self.lower_bound_textid = self.canvas.create_text(
                 self.BOUND_TEXT_X , 
                 self.BAR_MAX_Y + self.LOWER_BOUND_TEXT_SHIFTY,
                 anchor=tk.NW,
                 justify=tk.CENTER,
+                state=tk.NORMAL,
                 font = self.normal_font,
-                text='{}\n答案下限'.format(self.ruler_lower_bound))
+                text='{}\n下限'.format(self.ruler_lower_bound))
         
         # create upper bound line dot and text
         self.upper_bound_lineid = self.canvas.create_line(
                 self.LINE_X, self.BAR_MAX_Y, 
                 self.THIN_BAR_X_RIGHT, self.BAR_MAX_Y,
                 fill=self.current_color,
-                
+                state=tk.NORMAL,
                 width=2,
                 dash=(7,)
                 )
@@ -155,14 +166,16 @@ class SearchGuess:
                 self.LINE_X - 6 , self.BAR_MAX_Y - 6, 
                 self.LINE_X + 5, self.BAR_MAX_Y + 5,
                 fill=self.current_color,
+                state=tk.NORMAL,
                 width=0, )
         self.upper_bound_textid = self.canvas.create_text(
                 self.BOUND_TEXT_X , 
                 self.BAR_MAX_Y + self.UPPER_BOUND_TEXT_SHIFTY,
                 anchor=tk.NW,
                 justify=tk.CENTER,
+                state=tk.NORMAL,
                 font = self.normal_font,
-                text='答案上限\n{}'.format(self.ruler_upper_bound))
+                text='上限\n{}'.format(self.ruler_upper_bound))
 
         # ruler text
         self.ruler_upper_textid = self.canvas.create_text(
@@ -170,6 +183,7 @@ class SearchGuess:
                 self.BAR_MIN_Y,
                 anchor=tk.W,
                 justify=tk.LEFT,
+                state=tk.NORMAL,
                 font = self.small_font,
                 text='{}'.format(self.ruler_upper_bound))
 
@@ -178,8 +192,18 @@ class SearchGuess:
                 self.BAR_MAX_Y,
                 anchor=tk.W,
                 justify=tk.LEFT,
+                state=tk.NORMAL,
                 font = self.small_font,
                 text='{}'.format(self.ruler_lower_bound))
+
+        self.scale_changing_textid = self.canvas.create_text(
+                self.CHANGE_SCALE_TEXT_X, 
+                (self.BAR_MAX_Y + self.BAR_MIN_Y)//2,
+                anchor=tk.W,
+                justify=tk.LEFT,
+                state=tk.HIDDEN,
+                font = self.normal_font,
+                text='[縮放尺度範圍]')
 
         # raise arrow above ruler text
         self.canvas.tag_raise(self.ruler_upper_textid, self.ruler_lower_textid)
@@ -199,7 +223,7 @@ class SearchGuess:
 
         
 
-    def draw_ruler(self, lower_num, upper_num):
+    def draw_ruler(self, lower_num, upper_num, show_gizmo=True):
         if lower_num > upper_num :
             raise 搜尋猜數錯誤('redraw_bar: lowernum > upper_num')
 
@@ -238,65 +262,124 @@ class SearchGuess:
                         width=0,    
                         fill=self.current_color,)
         
-        # update upper bound line, dot and text
-        self.canvas.coords(self.upper_bound_lineid, 
-                           self.LINE_X, 
-                           small_y,
-                           self.THIN_BAR_X_RIGHT, 
-                           small_y, )
-        self.canvas.itemconfigure(self.upper_bound_lineid,
-                        fill=self.current_color,)
 
-        self.canvas.coords(self.upper_bound_dotid,
-                self.LINE_X - 6 , small_y - 6, 
-                self.LINE_X + 5, small_y + 5 )
-        self.canvas.itemconfigure(self.upper_bound_dotid,
-                        fill=self.current_color,)
         
-        self.canvas.coords(self.upper_bound_textid,
-                self.BOUND_TEXT_X , 
-                small_y + self.UPPER_BOUND_TEXT_SHIFTY,)
-        self.canvas.itemconfigure(self.upper_bound_textid,
-                text='答案上限\n{}'.format(upper_num) )
-
-        # update lower bound line, dot and text
-        self.canvas.coords(self.lower_bound_lineid, 
-                           self.LINE_X, 
-                           big_y,
-                           self.THIN_BAR_X_RIGHT, 
-                           big_y, )
-        self.canvas.itemconfigure(self.lower_bound_lineid,
-                        fill=self.current_color,)
-
-        self.canvas.coords(self.lower_bound_dotid,
-                self.LINE_X - 6 , big_y - 6, 
-                self.LINE_X + 5, big_y + 5 )
-        self.canvas.itemconfigure(self.lower_bound_dotid,
-                        fill=self.current_color,)
         
-        self.canvas.coords(self.lower_bound_textid,
-                self.BOUND_TEXT_X , 
-                big_y + self.LOWER_BOUND_TEXT_SHIFTY,)
-        self.canvas.itemconfigure(self.lower_bound_textid,
-                text='{}\n答案下限'.format(lower_num) )
+
+        # handle both bound text display
+        if show_gizmo :
+            # update upper bound line, dot 
+            self.canvas.coords(self.upper_bound_lineid, 
+                            self.LINE_X, 
+                            small_y,
+                            self.THIN_BAR_X_RIGHT, 
+                            small_y, )
+            self.canvas.itemconfigure(self.upper_bound_lineid,
+                            state=tk.NORMAL,
+                            fill=self.current_color,)
+
+            self.canvas.coords(self.upper_bound_dotid,
+                    self.LINE_X - 6 , small_y - 6, 
+                    self.LINE_X + 5, small_y + 5 )
+            self.canvas.itemconfigure(self.upper_bound_dotid,
+                            state=tk.NORMAL,
+                            fill=self.current_color,)
+            
+            # update lower bound line, dot 
+            self.canvas.coords(self.lower_bound_lineid, 
+                            self.LINE_X, 
+                            big_y,
+                            self.THIN_BAR_X_RIGHT, 
+                            big_y, )
+            self.canvas.itemconfigure(self.lower_bound_lineid,
+                            state=tk.NORMAL,
+                            fill=self.current_color,)
+
+            self.canvas.coords(self.lower_bound_dotid,
+                    self.LINE_X - 6 , big_y - 6, 
+                    self.LINE_X + 5, big_y + 5 )
+            self.canvas.itemconfigure(self.lower_bound_dotid,
+                            state=tk.NORMAL,
+                            fill=self.current_color,)
+
+            self.canvas.coords(self.upper_bound_textid,
+                    self.BOUND_TEXT_X , 
+                    small_y + self.UPPER_BOUND_TEXT_SHIFTY,)
+            self.canvas.itemconfigure(self.upper_bound_textid,
+                    state=tk.NORMAL,
+                    text='上限\n{}'.format(upper_num) )
+
+            self.canvas.coords(self.lower_bound_textid,
+                    self.BOUND_TEXT_X , 
+                    big_y + self.LOWER_BOUND_TEXT_SHIFTY,)
+            self.canvas.itemconfigure(self.lower_bound_textid,
+                    state=tk.NORMAL,
+                    text='{}\n下限'.format(lower_num) )
+        else:
+            # hide line,  dot ,text
+            self.canvas.itemconfigure(self.upper_bound_lineid,
+                                      state=tk.HIDDEN)
+            self.canvas.itemconfigure(self.upper_bound_dotid,
+                                      state=tk.HIDDEN)
+            self.canvas.itemconfigure(self.lower_bound_lineid,
+                                      state=tk.HIDDEN)
+            self.canvas.itemconfigure(self.lower_bound_dotid,
+                                      state=tk.HIDDEN)
+
+            self.canvas.itemconfigure(self.upper_bound_textid,
+                                      state=tk.HIDDEN )
+
+            self.canvas.itemconfigure(self.lower_bound_textid,
+                                      state=tk.HIDDEN )
+
 
         self.canvas.update()
         self.delay()
 
-    def flex_upper_bound(self, value):
-        if value == self.upper_bound or value == self.lower_bound:
+    def change_upper_bound(self, value):
+        if value == self.upper_bound :
+            print('<<與原上限相同，不需改變>>')
             return
 
-        if not self.lower_bound < value < self.upper_bound:
-            raise 搜尋猜數錯誤(f"exceed ruler range")
+        if value <= self.lower_bound :
+            print('<<上限需大於下限>>')    
 
-        for n in range(self.upper_bound, value-1, -1):
-            self.draw_ruler(self.lower_bound, n)
+        if not self.puzzle_lower_bound < value < self.puzzle_upper_bound:
+            raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+                                                    self.puzzle_lower_bound,
+                                                    self.puzzle_upper_bound))
 
-        self.upper_bound = value
+        ### do  change 
+        if self.lower_bound < value < self.upper_bound: 
+            # scale shrinks
+            for n in range(self.upper_bound, value-1, -1):
+                self.draw_ruler(self.lower_bound, n)
+            self.upper_bound = value
+            # check if bound delta too small
+            delta = self.upper_bound - self.lower_bound
+            rate = delta /self.ruler_bound_delta
+            if rate <= self.ZOOM_IN_RATE:
+                for i in range(10):
+                    self.delay()
+                # # need to do change scale
+                # if delta <= self.MIN_SCALE_DELTA:
+                #     middle = (self.upper_bound + self.lower_bound)//2
+                #     lower_num = middle - self.MIN_SCALE_DELTA//2
+                #     upper_num = middle + self.MIN_SCALE_DELTA//2
+                #     # border check
+                #     if lower_num < self.puzzle_lower_bound:
+                #         lower_num = self.puzzle_lower_bound
+                #         upper_num = lower_num + self.MIN_SCALE_DELTA
+                    
+                #     if upper_num > self.puzzle_upper_bound:
+                #         upper_num = self.puzzle_upper_bound
+                #         lower_num = upper_num - self.MIN_SCALE_DELTA
+
+                #     self.change_scale(lower_num, upper_num)
+                self.zoom_in_scale(self.lower_bound, self.upper_bound)
 
 
-    def flex_lower_bound(self, value):
+    def change_lower_bound(self, value):
         if value == self.upper_bound or value == self.lower_bound:
             return
 
@@ -307,6 +390,69 @@ class SearchGuess:
             self.draw_ruler( n, self.upper_bound)
 
         self.lower_bound = value
+
+    def zoom_in_scale(self, lower_num ,upper_num):
+        if lower_num == self.ruler_lower_bound and upper_num == self.ruler_upper_bound:
+            print('<<尺度相同，不需改變>>')
+            return
+
+        if self.lower_bound < lower_num or self.upper_bound > upper_num:
+            raise 搜尋猜數錯誤("上下限不能在尺度範圍外")
+
+        if lower_num >= upper_num:
+            raise 搜尋猜數錯誤("lower_num is bigger")
+
+        # if upper_num - lower_num < self.MIN_SCALE_DELTA:
+        #     print('<<尺度差需大於{}>>'.format(self.MIN_SCALE_DELTA))
+        #     return
+
+        
+        # hide ruler line dot , text .show scale changing text
+        self.canvas.itemconfigure(self.ruler_lower_textid,
+                                  state=tk.HIDDEN)
+        # self.canvas.itemconfigure(self.lower_bound_lineid,
+        #                           state=tk.HIDDEN)
+        # self.canvas.itemconfigure(self.lower_bound_dotid,
+        #                           state=tk.HIDDEN)
+        self.canvas.itemconfigure(self.ruler_upper_textid,
+                                  state=tk.HIDDEN)
+        # self.canvas.itemconfigure(self.upper_bound_lineid,
+        #                           state=tk.HIDDEN)
+        # self.canvas.itemconfigure(self.upper_bound_dotid,
+        #                           state=tk.HIDDEN)
+        self.canvas.itemconfigure(self.scale_changing_textid,
+                                  state=tk.NORMAL)
+        
+        
+        # temp scale  , for scale change animation
+        self.current_color = next(self.COLOR_POOL)
+        self.ruler_lower_bound = self.DEFAULT_LOWER_BOUND
+        self.ruler_upper_bound = self.DEFAULT_UPPER_BOUND
+        self.ruler_bound_delta = self.ruler_upper_bound - self.ruler_lower_bound
+        middle = (self.ruler_upper_bound + self.ruler_lower_bound)//2
+        for i in range(0,middle, 1):
+            self.draw_ruler(middle-i, middle+i, show_gizmo=False)
+
+
+        # set scale bound and ruler text
+        self.canvas.itemconfigure(self.scale_changing_textid,
+                                  state=tk.HIDDEN)
+
+        self.ruler_lower_bound = lower_num
+        self.ruler_upper_bound = upper_num
+        self.ruler_bound_delta = self.ruler_upper_bound - self.ruler_lower_bound
+        
+        # restore ruler text
+        self.canvas.itemconfigure(self.ruler_lower_textid,
+                                  state=tk.NORMAL,
+                                  text='{}'.format(self.ruler_lower_bound))
+        self.canvas.itemconfigure(self.ruler_upper_textid,
+                                   state=tk.NORMAL,
+                                  text='{}'.format(self.ruler_upper_bound))
+        
+        #self.draw_ruler(self.lower_bound, self.upper_bound)
+        self.draw_ruler(self.ruler_lower_bound, self.ruler_upper_bound)
+
 
 
     def num2y(self, n):
@@ -360,7 +506,12 @@ class SearchGuess:
                 self.ARROW_X,
                 self.BAR_MAX_Y,
                 image=self.arrow_img,
-                anchor=tk.W )
+                anchor=tk.W ,
+                state=tk.HIDDEN)
+
+        # test get state (need to be set beforehand)
+        # state = self.canvas.itemcget(self.arrow_id, 'state')
+        # print('state: ', state)
         
 
          
