@@ -23,8 +23,8 @@ class BiSearchGuess:
     LOGO_NAME = 'search_guess_logo'
     
 
-    DEFAULT_LOWBOUND = 100
-    DEFAULT_UPBOUND = 200
+    DEFAULT_LOWBOUND = 0
+    DEFAULT_UPBOUND = 100
 
     LOGO_X = 50
     LOGO_Y = 0
@@ -83,8 +83,8 @@ class BiSearchGuess:
         #     print(r)
         
         # self.bisearch_ruler.set_upbound(150)
-        self.bisearch_ruler.set_lowbound(196)
-        self.bisearch_ruler.set_searcher(198)
+        #self.bisearch_ruler.set_lowbound(196)
+        #self.bisearch_ruler.set_searcher(198)
         #self.change_scale(11,80)
 
     def set_puzzle_note(self):
@@ -119,8 +119,7 @@ class BiSearchGuess:
                 0,
                 0,
                 image=self.bg_img,
-                anchor=tk.NW,
-                )
+                anchor=tk.NW)
 
     def set_logo(self):
         path = Path(__file__).parent / 'images' / (self.LOGO_NAME + '.png')
@@ -132,8 +131,48 @@ class BiSearchGuess:
                 self.LOGO_X,
                 self.LOGO_Y,
                 image=self.logo_img,
-                anchor=tk.NW,
-                )
+                anchor=tk.NW)
+
+    @property
+    def 上限(self):
+        return self.bisearch_ruler.upbound
+
+    @上限.setter
+    def 上限(self, value):
+        if type(value) is not int:
+            raise 搜尋猜數錯誤('上限值須為整數(錯誤值{})'.format(value))
+        
+        if not self.puzzle_lowbound<= value <= self.puzzle_upbound:
+            raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+                                                    self.puzzle_lowbound,
+                                                    self.puzzle_upbound))
+
+        self.bisearch_ruler.set_upbound(value)
+
+    @property
+    def 下限(self):
+        return self.bisearch_ruler.lowbound
+
+    @下限.setter
+    def 下限(self, value):
+        if type(value) is not int:
+            raise 搜尋猜數錯誤('下限值須為整數(錯誤值{})'.format(value))
+        
+        if not self.puzzle_lowbound<= value <= self.puzzle_upbound:
+            raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+                                                    self.puzzle_lowbound,
+                                                    self.puzzle_upbound))
+
+        self.bisearch_ruler.set_lowbound(value)
+
+    @property
+    def 答案上範圍(self):
+        return self.puzzle_upbound
+
+    @property
+    def 答案下範圍(self):
+        return self.puzzle_lowbound
+
 
 搜尋猜數 = BiSearchGuess()  
 
@@ -180,7 +219,7 @@ class BiSearchRuler:
     MIN_SCALE_DELTA = 10
     ZOOM_IN_RATE = 0.05
 
-    ANIMATE_NUM = 100
+    ANIMATE_NUM = 50
 
     def __init__(self, parent):
         self.parent = parent
@@ -315,10 +354,7 @@ class BiSearchRuler:
             print('<<上限需大於下限>>') 
             return   
 
-        # if not self.puzzle_lower_bound < value < self.puzzle_upper_bound:
-        #     raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
-        #                                             self.puzzle_lower_bound,
-        #                                             self.puzzle_upper_bound))
+        
 
         
         if self.ruler_lowbound <= value <= self.ruler_upbound: 
@@ -548,7 +584,7 @@ class BiSearchRuler:
                 image=self.arrow_img,
                 anchor=tk.W ,
                 state=tk.NORMAL)
-        self.parent.canvas.update()
+        
 
         self.arrow_textid = self.parent.canvas.create_text(
                 self.ARROW_TEXT_X, 
@@ -558,7 +594,9 @@ class BiSearchRuler:
                 state=tk.NORMAL,
                 
                 font = self.parent.normal_font,
-                text='{}'.format(self.searcher_num))
+                text='搜尋')
+
+        self.parent.canvas.update()
 
     def hide_searcher(self):
         self.parent.canvas.itemconfigure(self.arrow_id, 
@@ -578,7 +616,7 @@ class BiSearchRuler:
         if type(value) is not int:
             raise 搜尋猜數錯誤('搜尋數字必需為整數')
         
-        self.set_action('搜尋設為{}'.format(value))
+        #self.set_action('搜尋設為{}'.format(value))
         self.searcher_num = value
 
         if self.ruler_lowbound <= value <= self.ruler_upbound:
@@ -610,14 +648,27 @@ class BiSearchRuler:
                                 y)
         self.parent.canvas.itemconfigure(self.arrow_id, 
                                         state=tk.NORMAL)
-                                        
+
         self.parent.canvas.coords(self.arrow_textid,
                                 self.ARROW_TEXT_X,
                                 y)
         self.parent.canvas.itemconfigure(self.arrow_textid,
-                                        text='{}'.format(self.searcher_num),
+                                        text='搜尋\n{}'.format(self.searcher_num),
                                         state=tk.NORMAL)
         self.parent.canvas.update()
+
+
+    def gt_cmp(self):
+        pass
+
+    def eq_cmp(self):
+        pass
+
+    def le_cmp(self):
+        pass
+
+    
+
 
 
     def draw_ruler(self, lower_num, upper_num):
@@ -738,6 +789,9 @@ class BiSearchRuler:
 
         self.parent.canvas.itemconfigure(self.lowbound_textid,
                                     state=tk.HIDDEN )
+
+
+
 
 
 
