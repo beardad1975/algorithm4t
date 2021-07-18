@@ -23,8 +23,8 @@ class BiSearchGuess:
     LOGO_NAME = 'search_guess_logo'
     
 
-    DEFAULT_LOWBOUND = 0
-    DEFAULT_UPBOUND = 100
+    DEFAULT_LOWBOUND = 100
+    DEFAULT_UPBOUND = 200
 
     LOGO_X = 50
     LOGO_Y = 0
@@ -82,8 +82,8 @@ class BiSearchGuess:
         #     r = self.bisearch_ruler.calc_ruler_range(0, 99+i*1)
         #     print(r)
         
-        self.bisearch_ruler.set_upbound(80)
-        self.bisearch_ruler.set_upbound(120)
+        self.bisearch_ruler.set_upbound(150)
+        self.bisearch_ruler.set_lowbound(30)
         #self.bisearch_ruler.set_upbound(105)
         #self.change_scale(11,80)
 
@@ -145,8 +145,11 @@ class BiSearchRuler:
     RULER_X = 150
     RULER_Y = 160
 
-    COLOR_LIST = ['#349beb','#eb02eb','#11db02','#fc8c03',]
-    COLOR_POOL = cycle(COLOR_LIST)
+    #COLOR_LIST = ['#349beb','#eb02eb','#11db02','#fc8c03',]
+    #COLOR_POOL = cycle(COLOR_LIST)
+
+    BAR_COLOR = '#349beb'
+    CHANGE_SCALE_COLOR = '#11db02' 
 
     SCALE_COLOR = '#969696'
 
@@ -162,7 +165,7 @@ class BiSearchRuler:
     THIN_BAR_X_RIGHT = THIN_BAR_X + THIN_BAR_WIDTH
 
     LINE_X = 20
-    CHANGE_SCALE_TEXT_X = 30
+    CHANGE_SCALE_TEXT_X = 240
     BOUND_TEXT_X = 35
 
     RULER_SCALE_X = 225
@@ -173,9 +176,9 @@ class BiSearchRuler:
     UPBOUND_TEXT_SHIFTY = -50
 
     MIN_SCALE_DELTA = 10
-    ZOOM_IN_RATE = 0.01
+    ZOOM_IN_RATE = 0.05
 
-    ANIMATE_NUM = 80
+    ANIMATE_NUM = 100
 
     def __init__(self, parent):
         self.parent = parent
@@ -192,7 +195,8 @@ class BiSearchRuler:
        
         self.bar_id = None
         self.thin_bar_id = None
-        self.current_color = next(self.COLOR_POOL)
+        #self.current_color = next(self.COLOR_POOL)
+        self.current_color = self.BAR_COLOR
 
         self.ruler_scale_id_list = []
         self.searcher_num = None
@@ -225,10 +229,10 @@ class BiSearchRuler:
                 self.CHANGE_SCALE_TEXT_X, 
                 (self.BAR_MAX_Y + self.BAR_MIN_Y)//2,
                 anchor=tk.W,
-                justify=tk.LEFT,
+                justify=tk.CENTER,
                 state=tk.HIDDEN,
                 font = self.parent.normal_font,
-                text='[改變尺度]')
+                text='')
 
 
         
@@ -237,12 +241,14 @@ class BiSearchRuler:
 
         # animate bar from lower bound to upper bound 
 
-        tmp_step = (self.upbound - self.lowbound)/self.ANIMATE_NUM
-        tmp_upper = self.lowbound
-        for n in range(self.ANIMATE_NUM):
-            tmp_upper += tmp_step
-            self.draw_ruler(self.lowbound, round(tmp_upper))
-
+        # tmp_step = (self.upbound - self.lowbound)/self.ANIMATE_NUM
+        # tmp_upper = self.lowbound
+        # for n in range(self.ANIMATE_NUM):
+        #     tmp_upper += tmp_step
+        #     self.draw_ruler(self.lowbound, round(tmp_upper))
+        self.draw_ruler(self.lowbound, self.upbound)
+        for i in range(50):
+            self.delay()
         self.create_searcher()
 
         
@@ -316,8 +322,10 @@ class BiSearchRuler:
             
             self.change_upbound_in_ruler(value)
 
-            if self.check_need_zoomin_scale():
-                pass # todo
+            # if self.check_need_zoomin_scale():
+            #     low, up = self.calc_ruler_range(self.lowbound,
+            #                                 self.upbound)
+            #     self.set_ruler_range( low, up)
             
 
         else:
@@ -327,34 +335,48 @@ class BiSearchRuler:
             self.set_ruler_range( low, up)
             self.change_upbound_in_ruler(value)
 
+    def set_lowbound(self, value):
+        if value == self.lowbound :
+            print('<<與原下限相同，不需改變>>')
+            return
+
+        if value >= self.upbound :
+            print('<<下限需小於上限>>') 
+            return   
+
+        # if not self.puzzle_lower_bound < value < self.puzzle_upper_bound:
+        #     raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+        #                                             self.puzzle_lower_bound,
+        #                                             self.puzzle_upper_bound))
+
+        
+        if self.ruler_lowbound <= value <= self.ruler_upbound: 
+            
+            self.change_lowbound_in_ruler(value)
+
+            # if self.check_need_zoomin_scale():
+            #     low, up = self.calc_ruler_range(self.lowbound,
+            #                                 self.upbound)
+            #     self.set_ruler_range( low, up)
+            
+
+        else:
+            # upbound outside ruler
+            low, up = self.calc_ruler_range(value, self.upbound)
+            self.set_ruler_range( low, up)
+            self.change_lowbound_in_ruler(value)
 
     def check_need_zoomin_scale(self):
         # check if bound delta too small
+        if self.ruler_delta <= 10:
+            return False
 
         delta = self.upbound - self.lowbound
         rate = delta /self.ruler_delta
-        # if rate < self.ZOOM_IN_RATE:
-        #     for i in range(10):
-        #         self.delay()
+        if rate < self.ZOOM_IN_RATE:
+            return True
 
 
-            # # need to do change scale
-            # if delta <= self.MIN_SCALE_DELTA:
-            #     middle = (self.upper_bound + self.lower_bound)//2
-            #     lower_num = middle - self.MIN_SCALE_DELTA//2
-            #     upper_num = middle + self.MIN_SCALE_DELTA//2
-            #     # border check
-            #     if lower_num < self.puzzle_lower_bound:
-            #         lower_num = self.puzzle_lower_bound
-            #         upper_num = lower_num + self.MIN_SCALE_DELTA
-                
-            #     if upper_num > self.puzzle_upper_bound:
-            #         upper_num = self.puzzle_upper_bound
-            #         lower_num = upper_num - self.MIN_SCALE_DELTA
-
-            #     self.change_scale(lower_num, upper_num)
-            
-            # self.set_ruler_range(self.lowbound, self.upbound)
 
     def change_upbound_in_ruler(self, value):
         tmp_step = (value - self.upbound ) / self.ANIMATE_NUM
@@ -365,18 +387,26 @@ class BiSearchRuler:
         
         self.upbound = value
 
-
-    def set_lowbound(self, value):
-        if value == self.upbound or value == self.lowbound:
-            return
-
-        if not self.lowbound < value < self.upbound:
-            raise 搜尋猜數錯誤(f"exceed ruler range")
-
-        for n in range(self.lowbound, value+1):
-            self.draw_ruler( n, self.upbound)
-
+    def change_lowbound_in_ruler(self, value):
+        tmp_step = (value - self.lowbound ) / self.ANIMATE_NUM
+        tmp_lower = self.lowbound
+        for n in range(self.ANIMATE_NUM):
+            tmp_lower += tmp_step
+            self.draw_ruler(round(tmp_lower), self.upbound)
+        
         self.lowbound = value
+
+    # def set_lowbound(self, value):
+    #     if value == self.upbound or value == self.lowbound:
+    #         return
+
+    #     if not self.lowbound < value < self.upbound:
+    #         raise 搜尋猜數錯誤(f"exceed ruler range")
+
+    #     for n in range(self.lowbound, value+1):
+    #         self.draw_ruler( n, self.upbound)
+
+    #     self.lowbound = value
 
 
     def set_ruler_range(self, lower_num ,upper_num):
@@ -391,13 +421,18 @@ class BiSearchRuler:
             raise 搜尋猜數錯誤("lower_num is bigger")
 
         # show scale_changing_text
+
+        text = '刻度改為\n{}~{}'.format(lower_num, upper_num)
         self.parent.canvas.itemconfigure(self.scale_changing_textid,
-                                  state=tk.NORMAL)
+                                         text=text,
+                                         state=tk.NORMAL)
+        
 
         self.hide_scale()
         self.hide_searcher()
+        self.current_color = self.CHANGE_SCALE_COLOR
         
-        self.current_color = next(self.COLOR_POOL)
+        #self.current_color = next(self.COLOR_POOL)
         # animate
         old_low_y = self.num2y(self.ruler_lowbound, self.ruler_delta, self.lowbound)
         old_up_y = self.num2y(self.ruler_lowbound, self.ruler_delta, self.upbound)
@@ -409,6 +444,7 @@ class BiSearchRuler:
         # set scale bound and ruler text
         self.parent.canvas.itemconfigure(self.scale_changing_textid,
                                   state=tk.HIDDEN)
+        self.current_color = self.BAR_COLOR
 
         # change ruler bounds
         self.ruler_lowbound = lower_num
@@ -441,7 +477,7 @@ class BiSearchRuler:
         for i in range(self.ANIMATE_NUM):
             big_y += step_low
             small_y += step_up
-            print(small_y)
+            #print(small_y)
             self.redraw_bar(round(big_y), round(small_y))
             self.parent.canvas.update()
             self.delay()
