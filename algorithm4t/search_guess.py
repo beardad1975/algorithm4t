@@ -82,7 +82,9 @@ class BiSearchGuess:
         #     r = self.bisearch_ruler.calc_ruler_range(0, 99+i*1)
         #     print(r)
         
-
+        self.bisearch_ruler.set_upbound(80)
+        self.bisearch_ruler.set_upbound(120)
+        #self.bisearch_ruler.set_upbound(105)
         #self.change_scale(11,80)
 
     def set_puzzle_note(self):
@@ -309,39 +311,59 @@ class BiSearchRuler:
         #                                             self.puzzle_lower_bound,
         #                                             self.puzzle_upper_bound))
 
-        ### do  change 
-        if self.lowbound < value < self.upbound: 
-            # scale shrinks
-            tmp_step = (self.upbound - value) / self.ANIMATE_NUM
-            tmp_upper = self.upbound
-            for n in range(self.ANIMATE_NUM):
-                tmp_upper -= tmp_step
-                self.draw_ruler(self.lowbound, round(tmp_upper))
+        
+        if self.ruler_lowbound <= value <= self.ruler_upbound: 
             
-            self.upbound = value
-            # check if bound delta too small
-            delta = self.upbound - self.lowbound
-            rate = delta /self.ruler_delta
-            if rate < self.ZOOM_IN_RATE:
-                for i in range(10):
-                    self.delay()
-                # # need to do change scale
-                # if delta <= self.MIN_SCALE_DELTA:
-                #     middle = (self.upper_bound + self.lower_bound)//2
-                #     lower_num = middle - self.MIN_SCALE_DELTA//2
-                #     upper_num = middle + self.MIN_SCALE_DELTA//2
-                #     # border check
-                #     if lower_num < self.puzzle_lower_bound:
-                #         lower_num = self.puzzle_lower_bound
-                #         upper_num = lower_num + self.MIN_SCALE_DELTA
-                    
-                #     if upper_num > self.puzzle_upper_bound:
-                #         upper_num = self.puzzle_upper_bound
-                #         lower_num = upper_num - self.MIN_SCALE_DELTA
+            self.change_upbound_in_ruler(value)
 
-                #     self.change_scale(lower_num, upper_num)
+            if self.check_need_zoomin_scale():
+                pass # todo
+            
+
+        else:
+            # upbound outside ruler
+            low, up = self.calc_ruler_range(self.lowbound,
+                                            value)
+            self.set_ruler_range( low, up)
+            self.change_upbound_in_ruler(value)
+
+
+    def check_need_zoomin_scale(self):
+        # check if bound delta too small
+
+        delta = self.upbound - self.lowbound
+        rate = delta /self.ruler_delta
+        # if rate < self.ZOOM_IN_RATE:
+        #     for i in range(10):
+        #         self.delay()
+
+
+            # # need to do change scale
+            # if delta <= self.MIN_SCALE_DELTA:
+            #     middle = (self.upper_bound + self.lower_bound)//2
+            #     lower_num = middle - self.MIN_SCALE_DELTA//2
+            #     upper_num = middle + self.MIN_SCALE_DELTA//2
+            #     # border check
+            #     if lower_num < self.puzzle_lower_bound:
+            #         lower_num = self.puzzle_lower_bound
+            #         upper_num = lower_num + self.MIN_SCALE_DELTA
                 
-                self.set_ruler_range(self.lowbound, self.upbound)
+            #     if upper_num > self.puzzle_upper_bound:
+            #         upper_num = self.puzzle_upper_bound
+            #         lower_num = upper_num - self.MIN_SCALE_DELTA
+
+            #     self.change_scale(lower_num, upper_num)
+            
+            # self.set_ruler_range(self.lowbound, self.upbound)
+
+    def change_upbound_in_ruler(self, value):
+        tmp_step = (value - self.upbound ) / self.ANIMATE_NUM
+        tmp_upper = self.upbound
+        for n in range(self.ANIMATE_NUM):
+            tmp_upper += tmp_step
+            self.draw_ruler(self.lowbound, round(tmp_upper))
+        
+        self.upbound = value
 
 
     def set_lowbound(self, value):
@@ -368,54 +390,20 @@ class BiSearchRuler:
         if lower_num >= upper_num:
             raise 搜尋猜數錯誤("lower_num is bigger")
 
-        # if upper_num - lower_num < self.MIN_SCALE_DELTA:
-        #     print('<<尺度差需大於{}>>'.format(self.MIN_SCALE_DELTA))
-        #     return
-
-        
-        # hide ruler line dot , text .show scale changing text
-        # self.parent.canvas.itemconfigure(self.ruler_lowbound_textid,
-        #                           state=tk.HIDDEN)
-        # self.canvas.itemconfigure(self.lower_bound_lineid,
-        #                           state=tk.HIDDEN)
-        # self.canvas.itemconfigure(self.lower_bound_dotid,
-        #                           state=tk.HIDDEN)
-        # self.parent.canvas.itemconfigure(self.ruler_upbound_textid,
-        #                          state=tk.HIDDEN)
-        # self.canvas.itemconfigure(self.upper_bound_lineid,
-        #                           state=tk.HIDDEN)
-        # self.canvas.itemconfigure(self.upper_bound_dotid,
-        #                           state=tk.HIDDEN)
+        # show scale_changing_text
         self.parent.canvas.itemconfigure(self.scale_changing_textid,
                                   state=tk.NORMAL)
-        
-        
 
-
-
-        # # temp scale  , for scale change animation        
-        # self.ruler_lower_bound = self.DEFAULT_LOWER_BOUND
-        # self.ruler_upper_bound = self.DEFAULT_UPPER_BOUND
-        # self.ruler_delta = self.ruler_upper_bound - self.ruler_lower_bound
+        self.hide_scale()
+        self.hide_searcher()
         
-        ### scale from middle
-        # middle = (self.ruler_upper_bound + self.ruler_lower_bound)//2
-        # for i in range(0,middle, 1):
-        #     self.draw_ruler(middle-i, middle+i, show_gizmo=False)
-
-        
-        # scale from same position
-        
-        step_upward = (self.ruler_upbound - self.upbound)/self.ANIMATE_NUM
-        step_downward = (self.lowbound - self.ruler_lowbound)/self.ANIMATE_NUM
-        tmp_upper, tmp_lower = self.upbound, self.lowbound
-        for i in range(self.ANIMATE_NUM):
-            tmp_upper += step_upward
-            tmp_lower -= step_downward
-            self.draw_ruler( round(tmp_lower),
-                             round(tmp_upper), 
-                             show_gizmo=False)
-            
+        self.current_color = next(self.COLOR_POOL)
+        # animate
+        old_low_y = self.num2y(self.ruler_lowbound, self.ruler_delta, self.lowbound)
+        old_up_y = self.num2y(self.ruler_lowbound, self.ruler_delta, self.upbound)
+        new_low_y = self.num2y(lower_num, upper_num-lower_num, self.lowbound)
+        new_up_y = self.num2y(lower_num, upper_num-lower_num, self.upbound)
+        self.animate_both_bound(old_low_y, old_up_y, new_low_y, new_up_y)   
              
 
         # set scale bound and ruler text
@@ -427,6 +415,11 @@ class BiSearchRuler:
         self.ruler_upbound = upper_num
         self.ruler_delta = self.ruler_upbound - self.ruler_lowbound
         
+        self.draw_scale()
+        
+        self.draw_ruler(self.lowbound, self.upbound)
+        self.set_searcher(self.searcher_num)
+
         # restore ruler text
         # self.parent.canvas.itemconfigure(self.ruler_lowbound_textid,
         #                           state=tk.NORMAL,
@@ -434,10 +427,24 @@ class BiSearchRuler:
         # self.parent.canvas.itemconfigure(self.ruler_upbound_textid,
         #                            state=tk.NORMAL,
         #                           text='{}'.format(self.ruler_upbound))
-        self.current_color = next(self.COLOR_POOL)
+        
         #self.draw_ruler(self.lower_bound, self.upper_bound)
-        self.draw_ruler(self.ruler_lowbound, self.ruler_upbound)
+        #self.draw_ruler(self.ruler_lowbound, self.ruler_upbound)
 
+
+    def animate_both_bound(self, old_low_y, old_up_y, new_low_y, new_up_y):
+        self.hide_gizmo()
+
+        step_up = (new_up_y - old_up_y)/self.ANIMATE_NUM
+        step_low = (new_low_y - old_low_y)/self.ANIMATE_NUM
+        big_y, small_y = old_low_y, old_up_y
+        for i in range(self.ANIMATE_NUM):
+            big_y += step_low
+            small_y += step_up
+            print(small_y)
+            self.redraw_bar(round(big_y), round(small_y))
+            self.parent.canvas.update()
+            self.delay()
 
     def create_scale(self):
         one_10th = self.ruler_delta // 10
@@ -519,14 +526,30 @@ class BiSearchRuler:
         self.parent.canvas.update()  
 
 
-    def draw_ruler(self, lower_num, upper_num, show_gizmo=True):
+    def draw_ruler(self, lower_num, upper_num):
         if lower_num > upper_num :
             raise 搜尋猜數錯誤('lowernum > upper_num')
 
         if type(lower_num) is not int or type(upper_num) is not int:
             raise 搜尋猜數錯誤(' lowernum or upper_num not int')
 
-        
+        big_y = self.num2y(self.ruler_lowbound, self.ruler_delta, lower_num)
+        small_y = self.num2y(self.ruler_lowbound, self.ruler_delta, upper_num)
+
+        self.redraw_bar(big_y, small_y)
+
+        # handle both bound text display
+            # update upper bound line, dot 
+        self.set_gizmo(lower_num ,upper_num, big_y, small_y)
+
+        self.parent.canvas.update()
+        self.delay() 
+
+
+
+
+
+    def redraw_bar(self, big_y, small_y):
         # delete old bar if necessary
         if self.bar_id is not None:
             self.parent.canvas.delete(self.bar_id)
@@ -535,11 +558,6 @@ class BiSearchRuler:
         if self.thin_bar_id is not None:
             self.parent.canvas.delete(self.thin_bar_id)
             self.thin_bar_id = None
-
-        big_y = self.num2y(self.ruler_lowbound, self.ruler_delta, lower_num)
-        small_y = self.num2y(self.ruler_lowbound, self.ruler_delta, upper_num)
-
-        
 
         # redarw bar and thin bar 
         self.bar_id = self.parent.canvas.create_rectangle(
@@ -557,13 +575,9 @@ class BiSearchRuler:
                         big_y,
                         width=0,    
                         fill=self.current_color,)
-        
 
-        
 
-        # handle both bound text display
-        if show_gizmo :
-            # update upper bound line, dot 
+    def set_gizmo(self, lower_num, upper_num, big_y, small_y):
             self.parent.canvas.coords(self.upbound_lineid, 
                             self.LINE_X, 
                             small_y,
@@ -611,26 +625,26 @@ class BiSearchRuler:
             self.parent.canvas.itemconfigure(self.lowbound_textid,
                     state=tk.NORMAL,
                     text='{}\n下限'.format(lower_num) )
-        else:
-            # hide line,  dot ,text
-            self.parent.canvas.itemconfigure(self.upbound_lineid,
-                                      state=tk.HIDDEN)
-            self.parent.canvas.itemconfigure(self.upbound_dotid,
-                                      state=tk.HIDDEN)
-            self.parent.canvas.itemconfigure(self.lowbound_lineid,
-                                      state=tk.HIDDEN)
-            self.parent.canvas.itemconfigure(self.lowbound_dotid,
-                                      state=tk.HIDDEN)
-
-            self.parent.canvas.itemconfigure(self.upbound_textid,
-                                      state=tk.HIDDEN )
-
-            self.parent.canvas.itemconfigure(self.lowbound_textid,
-                                      state=tk.HIDDEN )
 
 
-        self.parent.canvas.update()
-        self.delay() 
+
+    def hide_gizmo(self):
+        # hide line,  dot ,text
+        self.parent.canvas.itemconfigure(self.upbound_lineid,
+                                    state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(self.upbound_dotid,
+                                    state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(self.lowbound_lineid,
+                                    state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(self.lowbound_dotid,
+                                    state=tk.HIDDEN)
+
+        self.parent.canvas.itemconfigure(self.upbound_textid,
+                                    state=tk.HIDDEN )
+
+        self.parent.canvas.itemconfigure(self.lowbound_textid,
+                                    state=tk.HIDDEN )
+
 
 
     def num2y(self, lowbound, delta, n):
@@ -646,7 +660,7 @@ class BiSearchRuler:
         time.sleep(sec) 
 
     def calc_ruler_range(self, lower_num, upper_num):
-        # return base, range_exp10 
+        # return ruler_low, ruler_up of according to input 
         # base
         # range_exp10:could be 1 2 3 ...
 
