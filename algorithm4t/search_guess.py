@@ -30,7 +30,7 @@ class BiSearchGuess:
     LOGO_Y = 0
 
     PUZZLE_X = 200
-    PUZZLE_Y = 90    
+    PUZZLE_Y = 110    
     
     def __init__(self):
         self.puzzle_lowbound = None
@@ -82,13 +82,13 @@ class BiSearchGuess:
         #     r = self.bisearch_ruler.calc_ruler_range(0, 99+i*1)
         #     print(r)
         
-        self.bisearch_ruler.set_upbound(150)
-        self.bisearch_ruler.set_lowbound(30)
-        #self.bisearch_ruler.set_upbound(105)
+        # self.bisearch_ruler.set_upbound(150)
+        self.bisearch_ruler.set_lowbound(196)
+        self.bisearch_ruler.set_searcher(198)
         #self.change_scale(11,80)
 
     def set_puzzle_note(self):
-        puzzle_text = '請猜出範圍{}~{}內的整數答案'.format(
+        puzzle_text = '猜一個整數的答案\n範圍{}~{}'.format(
                         self.puzzle_lowbound,self.puzzle_upbound)
         self.puzzle_id = self.canvas.create_text(
                 self.PUZZLE_X,
@@ -165,12 +165,14 @@ class BiSearchRuler:
     THIN_BAR_X_RIGHT = THIN_BAR_X + THIN_BAR_WIDTH
 
     LINE_X = 20
-    CHANGE_SCALE_TEXT_X = 240
+    ACTION_X = 183
+    ACTION_Y = 730
     BOUND_TEXT_X = 35
 
     RULER_SCALE_X = 225
     
     ARROW_X = 220
+    ARROW_TEXT_X = 300
 
     LOWBOUND_TEXT_SHIFTY = 8
     UPBOUND_TEXT_SHIFTY = -50
@@ -225,12 +227,13 @@ class BiSearchRuler:
         self.create_scale()
         
         # scale changing text
-        self.scale_changing_textid = self.parent.canvas.create_text(
-                self.CHANGE_SCALE_TEXT_X, 
-                (self.BAR_MAX_Y + self.BAR_MIN_Y)//2,
-                anchor=tk.W,
+        self.action_textid = self.parent.canvas.create_text(
+                self.ACTION_X, 
+                self.ACTION_Y,
+                anchor=tk.CENTER,
                 justify=tk.CENTER,
                 state=tk.HIDDEN,
+                fill='#d13708',
                 font = self.parent.normal_font,
                 text='')
 
@@ -322,10 +325,7 @@ class BiSearchRuler:
             
             self.change_upbound_in_ruler(value)
 
-            # if self.check_need_zoomin_scale():
-            #     low, up = self.calc_ruler_range(self.lowbound,
-            #                                 self.upbound)
-            #     self.set_ruler_range( low, up)
+            
             
 
         else:
@@ -379,6 +379,8 @@ class BiSearchRuler:
 
 
     def change_upbound_in_ruler(self, value):
+        self.set_action('上限設為{}'.format(value))
+
         tmp_step = (value - self.upbound ) / self.ANIMATE_NUM
         tmp_upper = self.upbound
         for n in range(self.ANIMATE_NUM):
@@ -388,6 +390,8 @@ class BiSearchRuler:
         self.upbound = value
 
     def change_lowbound_in_ruler(self, value):
+        self.set_action('下限設為{}'.format(value))
+
         tmp_step = (value - self.lowbound ) / self.ANIMATE_NUM
         tmp_lower = self.lowbound
         for n in range(self.ANIMATE_NUM):
@@ -408,6 +412,16 @@ class BiSearchRuler:
 
     #     self.lowbound = value
 
+    def set_action(self, text=''):
+        self.parent.canvas.itemconfigure(self.action_textid,
+                                         text=text,
+                                         state=tk.NORMAL)
+        self.parent.canvas.update()
+
+    def hide_action(self):
+        self.parent.canvas.itemconfigure(self.action_textid,
+                                         state=tk.HIDDEN)
+        self.parent.canvas.update()
 
     def set_ruler_range(self, lower_num ,upper_num):
         if lower_num == self.ruler_lowbound and upper_num == self.ruler_upbound:
@@ -423,9 +437,7 @@ class BiSearchRuler:
         # show scale_changing_text
 
         text = '刻度改為\n{}~{}'.format(lower_num, upper_num)
-        self.parent.canvas.itemconfigure(self.scale_changing_textid,
-                                         text=text,
-                                         state=tk.NORMAL)
+        self.set_action(text)
         
 
         self.hide_scale()
@@ -442,8 +454,8 @@ class BiSearchRuler:
              
 
         # set scale bound and ruler text
-        self.parent.canvas.itemconfigure(self.scale_changing_textid,
-                                  state=tk.HIDDEN)
+        self.hide_action()
+
         self.current_color = self.BAR_COLOR
 
         # change ruler bounds
@@ -538,28 +550,74 @@ class BiSearchRuler:
                 state=tk.NORMAL)
         self.parent.canvas.update()
 
+        self.arrow_textid = self.parent.canvas.create_text(
+                self.ARROW_TEXT_X, 
+                y,
+                anchor=tk.W,
+                justify=tk.LEFT,
+                state=tk.NORMAL,
+                
+                font = self.parent.normal_font,
+                text='{}'.format(self.searcher_num))
+
     def hide_searcher(self):
         self.parent.canvas.itemconfigure(self.arrow_id, 
                                          state=tk.HIDDEN) 
+        self.parent.canvas.itemconfigure(self.arrow_textid, 
+                                         state=tk.HIDDEN)
         self.parent.canvas.update()           
 
     def show_searcher(self):
         self.parent.canvas.itemconfigure(self.arrow_id, 
                                          state=tk.NORMAL)
+        self.parent.canvas.itemconfigure(self.arrow_textid, 
+                                         state=tk.NORMAL)
         self.parent.canvas.update()
 
     def set_searcher(self, value):
-        # todo: value check
-        # todo: case ouside ruler
+        if type(value) is not int:
+            raise 搜尋猜數錯誤('搜尋數字必需為整數')
+        
+        self.set_action('搜尋設為{}'.format(value))
         self.searcher_num = value
+
+        if self.ruler_lowbound <= value <= self.ruler_upbound:
+            self.draw_arrow(value)
+
+            if self.check_need_zoomin_scale():
+                low, up = self.calc_ruler_range(self.lowbound,
+                                            self.upbound)
+                for i in range(50):
+                    self.delay()
+                self.set_ruler_range( low, up)
+
+            #self.draw_arrow(value)
+        elif value > self.ruler_upbound:
+            low, up = self.calc_ruler_range(self.lowbound, value)
+            self.set_ruler_range( low, up)
+            self.draw_arrow(value)
+        elif value < self.ruler_lowbound:
+            low, up = self.calc_ruler_range(value, self.upbound)
+            self.set_ruler_range( low, up)
+            self.draw_arrow(value)
+            
+            
+
+    def draw_arrow(self, value):
         y = self.num2y(self.ruler_lowbound, self.ruler_delta, value)
         self.parent.canvas.coords(self.arrow_id,
-                                  self.ARROW_X,
-                                  y)
+                                self.ARROW_X,
+                                y)
         self.parent.canvas.itemconfigure(self.arrow_id, 
-                                         state=tk.NORMAL)
-
-        self.parent.canvas.update()  
+                                        state=tk.NORMAL)
+                                        
+        self.parent.canvas.coords(self.arrow_textid,
+                                self.ARROW_TEXT_X,
+                                y)
+        self.parent.canvas.itemconfigure(self.arrow_textid,
+                                        text='{}'.format(self.searcher_num),
+                                        state=tk.NORMAL)
+        self.parent.canvas.update()
 
 
     def draw_ruler(self, lower_num, upper_num):
