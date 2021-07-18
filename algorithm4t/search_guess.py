@@ -24,13 +24,13 @@ class BiSearchGuess:
     
 
     DEFAULT_LOWBOUND = 0
-    DEFAULT_UPBOUND = 100
+    DEFAULT_UPBOUND = 1000000
 
     LOGO_X = 50
     LOGO_Y = 0
 
     PUZZLE_X = 200
-    PUZZLE_Y = 110    
+    PUZZLE_Y = 80    
     
     def __init__(self):
         self.puzzle_lowbound = None
@@ -38,8 +38,16 @@ class BiSearchGuess:
         self.puzzle_answer = None  # bin str
         self.bisearch_ruler = None 
         
-        
-        
+    def __repr__(self):
+        text = '範圍:{}~{} (次數: , 搜尋:{}, 下限:{}, 上限:{} )'.format(
+                                    self.puzzle_lowbound,
+                                    self.puzzle_upbound,
+                                    self.bisearch_ruler.searcher_num,
+                                    self.bisearch_ruler.lowbound,
+                                    self.bisearch_ruler.upbound,
+                                    )
+        return text
+
 
     def 產生題目(self, *args, **kwargs):
         if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME :
@@ -59,6 +67,9 @@ class BiSearchGuess:
                             self.puzzle_upbound)
             self.puzzle_answer = bin(tmp)
             #print('answer: ', self.puzzle_answer)
+
+        self.puzzle_text = '範圍{}~{}的整數,請猜答案'.format(
+                        self.puzzle_lowbound,self.puzzle_upbound)
 
         self.puzzle_init()
 
@@ -88,13 +99,12 @@ class BiSearchGuess:
         #self.change_scale(11,80)
 
     def set_puzzle_note(self):
-        puzzle_text = '猜一個整數的答案\n範圍{}~{}'.format(
-                        self.puzzle_lowbound,self.puzzle_upbound)
+        
         self.puzzle_id = self.canvas.create_text(
                 self.PUZZLE_X,
                 self.PUZZLE_Y,
                 font=self.normal_font,
-                text=puzzle_text,
+                text=self.puzzle_text,
                 anchor=tk.CENTER,
                 justify=tk.CENTER )
 
@@ -166,12 +176,16 @@ class BiSearchGuess:
         self.bisearch_ruler.set_lowbound(value)
 
     @property
-    def 答案上範圍(self):
+    def 題目上範圍(self):
         return self.puzzle_upbound
 
     @property
-    def 答案下範圍(self):
+    def 題目下範圍(self):
         return self.puzzle_lowbound
+
+    @property
+    def 答案(self):
+        return AnswerCmp(self)
 
 
 搜尋猜數 = BiSearchGuess()  
@@ -180,6 +194,9 @@ class BiSearchGuess:
 class BiSearchRuler:
     RULER_NAME = 'ruler'
     ARROW_NAME = 'search_arrow'
+    UP_ROCKET_NAME = 'up_rocket'
+    LOW_ROCKET_NAME = 'low_rocket'
+    BULB_NAME = 'bulb'
 
     RULER_X = 150
     RULER_Y = 160
@@ -213,13 +230,17 @@ class BiSearchRuler:
     ARROW_X = 220
     ARROW_TEXT_X = 300
 
+    COMPARATOR_X = 280
+    COMPARATOR_SHIFTY = 65
+    BULB_SHIFTY = 50
+
     LOWBOUND_TEXT_SHIFTY = 8
     UPBOUND_TEXT_SHIFTY = -50
 
     MIN_SCALE_DELTA = 10
     ZOOM_IN_RATE = 0.05
 
-    ANIMATE_NUM = 50
+    ANIMATE_NUM = 80
 
     def __init__(self, parent):
         self.parent = parent
@@ -244,6 +265,9 @@ class BiSearchRuler:
 
         
         self.ruler_init()
+
+
+
 
 
     def ruler_init(self):
@@ -289,9 +313,11 @@ class BiSearchRuler:
         #     tmp_upper += tmp_step
         #     self.draw_ruler(self.lowbound, round(tmp_upper))
         self.draw_ruler(self.lowbound, self.upbound)
-        for i in range(50):
+        for i in range(30):
             self.delay()
+
         self.create_searcher()
+        self.create_comparator()
 
         
 
@@ -461,7 +487,7 @@ class BiSearchRuler:
 
     def set_ruler_range(self, lower_num ,upper_num):
         if lower_num == self.ruler_lowbound and upper_num == self.ruler_upbound:
-            print('<<尺度相同，不需改變>>')
+            #print('<<尺度相同，不需改變>>')
             return
 
         if self.lowbound < lower_num or self.upbound > upper_num:
@@ -571,7 +597,7 @@ class BiSearchRuler:
     def create_searcher(self):
         # load arrow
         middle =  self.ruler_lowbound + self.ruler_delta//2
-        self.searcher_num = middle
+        #self.searcher_num = middle
 
         y = self.num2y(self.ruler_lowbound, self.ruler_delta, middle)
 
@@ -584,6 +610,7 @@ class BiSearchRuler:
                 image=self.arrow_img,
                 anchor=tk.W ,
                 state=tk.NORMAL)
+
         
 
         self.arrow_textid = self.parent.canvas.create_text(
@@ -595,6 +622,9 @@ class BiSearchRuler:
                 
                 font = self.parent.normal_font,
                 text='搜尋')
+
+
+
 
         self.parent.canvas.update()
 
@@ -617,10 +647,11 @@ class BiSearchRuler:
             raise 搜尋猜數錯誤('搜尋數字必需為整數')
         
         #self.set_action('搜尋設為{}'.format(value))
+        self.hide_comparator()
         self.searcher_num = value
 
         if self.ruler_lowbound <= value <= self.ruler_upbound:
-            self.draw_arrow(value)
+            self.draw_searcher(value)
 
             if self.check_need_zoomin_scale():
                 low, up = self.calc_ruler_range(self.lowbound,
@@ -629,19 +660,18 @@ class BiSearchRuler:
                     self.delay()
                 self.set_ruler_range( low, up)
 
-            #self.draw_arrow(value)
+            
         elif value > self.ruler_upbound:
             low, up = self.calc_ruler_range(self.lowbound, value)
             self.set_ruler_range( low, up)
-            self.draw_arrow(value)
+            self.draw_searcher(value)
         elif value < self.ruler_lowbound:
             low, up = self.calc_ruler_range(value, self.upbound)
             self.set_ruler_range( low, up)
-            self.draw_arrow(value)
-            
-            
+            self.draw_searcher(value)
 
-    def draw_arrow(self, value):
+
+    def draw_searcher(self, value):
         y = self.num2y(self.ruler_lowbound, self.ruler_delta, value)
         self.parent.canvas.coords(self.arrow_id,
                                 self.ARROW_X,
@@ -658,14 +688,97 @@ class BiSearchRuler:
         self.parent.canvas.update()
 
 
+    def create_comparator(self):
+        path = Path(__file__).parent / 'images' / (self.UP_ROCKET_NAME + '.png')     
+        _im = Image.open(path)
+        self.uprocket_img = ImageTk.PhotoImage(_im)
+        self.uprocket_id = self.parent.canvas.create_image(
+                0, 0,
+                image=self.uprocket_img,
+                anchor=tk.CENTER,
+                state=tk.HIDDEN)
+
+        path = Path(__file__).parent / 'images' / (self.LOW_ROCKET_NAME + '.png')     
+        _im = Image.open(path)
+        self.lowrocket_img = ImageTk.PhotoImage(_im)
+        self.lowrocket_id = self.parent.canvas.create_image(
+                0, 0,
+                image=self.lowrocket_img,
+                anchor=tk.CENTER,
+                state=tk.HIDDEN)
+
+        path = Path(__file__).parent / 'images' / (self.BULB_NAME + '.png')     
+        _im = Image.open(path)
+        self.bulb_img = ImageTk.PhotoImage(_im)
+        self.bulb_id = self.parent.canvas.create_image(
+                0, 0,
+                image=self.bulb_img,
+                anchor=tk.CENTER,
+                state=tk.HIDDEN)
+        
+
+    def set_comparator(self, op):
+        y = self.num2y(self.ruler_lowbound, self.ruler_delta, self.searcher_num)
+        
+        if op == '>':
+            self.parent.canvas.coords(self.uprocket_id,
+                                self.COMPARATOR_X ,
+                                y - self.COMPARATOR_SHIFTY)
+            self.parent.canvas.itemconfigure(self.uprocket_id, 
+                                         state=tk.NORMAL)
+            
+        elif op == '<':
+            self.parent.canvas.coords(self.lowrocket_id,
+                                self.COMPARATOR_X ,
+                                y + self.COMPARATOR_SHIFTY)
+            self.parent.canvas.itemconfigure(self.lowrocket_id, 
+                                         state=tk.NORMAL)
+        elif op == '==':
+            self.parent.canvas.coords(self.bulb_id,
+                                self.COMPARATOR_X ,
+                                y - self.BULB_SHIFTY)
+            self.parent.canvas.itemconfigure(self.bulb_id, 
+                                         state=tk.NORMAL)       
+        self.parent.canvas.update()
+
+    def hide_comparator(self):
+        self.parent.canvas.itemconfigure(self.uprocket_id, 
+                                         state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(self.lowrocket_id, 
+                                         state=tk.HIDDEN)
+        self.parent.canvas.itemconfigure(self.bulb_id, 
+                                         state=tk.HIDDEN)
+
+
     def gt_cmp(self):
-        pass
+        self.set_action('答案大於{}嗎？'.format(self.searcher_num))
+        if int(self.parent.puzzle_answer, 2) > self.searcher_num:
+            self.set_comparator('>')
+            self.delay()
+            return True
+        else:
+            self.delay()
+            return False 
 
     def eq_cmp(self):
-        pass
+        self.set_action('答案等於{}嗎？'.format(self.searcher_num))
+        if int(self.parent.puzzle_answer, 2) == self.searcher_num:
+            self.set_comparator('==')
+            self.delay()
+            return True
+        else:
+            self.delay()
+            return False 
 
-    def le_cmp(self):
-        pass
+    def lt_cmp(self):
+        self.set_action('答案小於{}嗎？'.format(self.searcher_num))
+        if int(self.parent.puzzle_answer, 2) < self.searcher_num:
+            self.set_comparator('<')
+            self.delay()
+            return True
+        else:
+            self.delay()
+            return False 
 
     
 
@@ -844,4 +957,49 @@ class BiSearchRuler:
         #print('base, range_exp10: ', base, range_exp10)
         return base, base + 10 ** range_exp10
 
+
+class AnswerCmp:
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __repr__(self):
+        return('<<請想一想並動手操作找出答案>>')
+
+    def __gt__(self, other):
+        if type(other) is not int:
+            raise 搜尋猜數錯誤('比較值須為整數(錯誤值{})'.format(other))       
         
+        if not self.parent.puzzle_lowbound<= other <= self.parent.puzzle_upbound:
+            raise 搜尋猜數錯誤("超出題目範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.puzzle_lowbound,
+                                                    self.parent.puzzle_upbound,
+                                                    other))
+
+        self.parent.bisearch_ruler.set_searcher(other)
+        return self.parent.bisearch_ruler.gt_cmp()
+
+    def __eq__(self, other):
+        if type(other) is not int:
+            raise 搜尋猜數錯誤('比較值須為整數(錯誤值{})'.format(other))       
+        
+        if not self.parent.puzzle_lowbound<= other <= self.parent.puzzle_upbound:
+            raise 搜尋猜數錯誤("超出題目範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.puzzle_lowbound,
+                                                    self.parent.puzzle_upbound,
+                                                    other))
+
+        self.parent.bisearch_ruler.set_searcher(other)
+        return self.parent.bisearch_ruler.eq_cmp()
+
+    def __lt__(self, other):
+        if type(other) is not int:
+            raise 搜尋猜數錯誤('比較值須為整數(錯誤值{})'.format(other))       
+        
+        if not self.parent.puzzle_lowbound<= other <= self.parent.puzzle_upbound:
+            raise 搜尋猜數錯誤("超出題目範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.puzzle_lowbound,
+                                                    self.parent.puzzle_upbound,
+                                                    other))
+
+        self.parent.bisearch_ruler.set_searcher(other)
+        return self.parent.bisearch_ruler.lt_cmp()        
