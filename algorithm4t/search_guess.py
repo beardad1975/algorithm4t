@@ -240,7 +240,8 @@ class BiSearchRuler:
     MIN_SCALE_DELTA = 10
     ZOOM_IN_RATE = 0.05
 
-    ANIMATE_NUM = 80
+    ANIMATE_NUM = 50
+    #CMP_ANIMATE_NUM = 30
 
     def __init__(self, parent):
         self.parent = parent
@@ -721,24 +722,54 @@ class BiSearchRuler:
         y = self.num2y(self.ruler_lowbound, self.ruler_delta, self.searcher_num)
         
         if op == '>':
-            self.parent.canvas.coords(self.uprocket_id,
-                                self.COMPARATOR_X ,
-                                y - self.COMPARATOR_SHIFTY)
             self.parent.canvas.itemconfigure(self.uprocket_id, 
                                          state=tk.NORMAL)
+            # bigger animate
+            new_up_y = y - self.COMPARATOR_SHIFTY
+            tmp_step = (y - new_up_y ) / self.ANIMATE_NUM
+            tmp_y = y
+            for n in range(self.ANIMATE_NUM):
+                tmp_y -= tmp_step     
+
+                self.parent.canvas.coords(self.uprocket_id,
+                                    self.COMPARATOR_X ,
+                                    round(tmp_y))
+                self.parent.canvas.update()
+                self.delay()
+            
             
         elif op == '<':
-            self.parent.canvas.coords(self.lowrocket_id,
-                                self.COMPARATOR_X ,
-                                y + self.COMPARATOR_SHIFTY)
             self.parent.canvas.itemconfigure(self.lowrocket_id, 
                                          state=tk.NORMAL)
+
+            # smaller animate
+            new_low_y = y + self.COMPARATOR_SHIFTY
+            tmp_step = (new_low_y - y) / self.ANIMATE_NUM
+            tmp_y = y
+            for n in range(self.ANIMATE_NUM):
+                tmp_y += tmp_step
+                self.parent.canvas.coords(self.lowrocket_id,
+                                    self.COMPARATOR_X ,
+                                    round(tmp_y))
+                self.parent.canvas.update()
+                self.delay()
+            
         elif op == '==':
-            self.parent.canvas.coords(self.bulb_id,
-                                self.COMPARATOR_X ,
-                                y - self.BULB_SHIFTY)
             self.parent.canvas.itemconfigure(self.bulb_id, 
-                                         state=tk.NORMAL)       
+                                         state=tk.NORMAL)
+            # equal animate
+            new_up_y = y - self.BULB_SHIFTY
+            tmp_step = (y - new_up_y ) / self.ANIMATE_NUM
+            tmp_y = y
+            for n in range(self.ANIMATE_NUM):
+                tmp_y -= tmp_step
+
+                self.parent.canvas.coords(self.bulb_id,
+                                    self.COMPARATOR_X ,
+                                    round(tmp_y))
+                self.parent.canvas.update()
+                self.delay()
+                   
         self.parent.canvas.update()
 
     def hide_comparator(self):
