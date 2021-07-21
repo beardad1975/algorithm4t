@@ -35,6 +35,10 @@ class BiSearchGuess:
     ANIMATE_FAST = 25
     ANIMATE_NORMAL = 50
     ANIMATE_SLOW =  100
+
+    RESULT_X = 200
+    RESULT_Y = 100
+    RESULT_BLINK_TIME = 700
     
     def __init__(self):
         self.puzzle_lowbound = None
@@ -117,6 +121,57 @@ class BiSearchGuess:
 
         #self.canvas.update()
 
+
+    def 提交搜尋(self):
+        if not self.search_guessing:
+            print('<<請先執行 產生題目>>')
+            return 
+
+        if not self.bisearch_ruler.searcher_num:
+            print('<<請至少搜尋1次(與答案比較)>>')
+            return 
+
+        'here'
+        if self.bisearch_ruler.searcher_num == int(self.puzzle_answer, 2):
+            tmp_text = "搜尋成功"
+        else:
+            tmp_text = '搜尋失敗\n答案是\n{}'.format(int(self.puzzle_answer, 2))
+
+        self.result_id = self.canvas.create_text(
+                self.RESULT_X,
+                self.RESULT_Y,
+                font=self.result_font,
+                text=tmp_text,
+                fill='#ff0000',
+                anchor=tk.N,
+                justify=tk.CENTER, 
+        )
+
+        self.result_showing = True
+        self.canvas.after(self.RESULT_BLINK_TIME, 
+                            self.blink_result)
+
+        self.root.mainloop()
+
+    def blink_result(self):
+        
+        if self.result_showing:
+            self.canvas.itemconfigure(
+                            self.result_id,
+                            state = tk.HIDDEN
+                            ) 
+            #print('hidden')        
+        else:
+            self.canvas.itemconfigure(
+                            self.result_id,
+                            state = tk.NORMAL
+                            )
+            #print('normal')
+        self.canvas.update()
+        self.result_showing = not self.result_showing
+        self.canvas.after(self.RESULT_BLINK_TIME,
+                            self.blink_result)
+
     def 設定速度(self, speed):
         if speed == 'normal':
             self.animate_num = self.ANIMATE_NORMAL
@@ -179,7 +234,7 @@ class BiSearchGuess:
         self.scale_font = font.Font(size=10, weight=font.NORMAL, family='Consolas')
         self.small_font = font.Font(size=12, weight=font.NORMAL, family='Consolas')
         self.normal_font = font.Font(size=14, weight=font.NORMAL, family='Consolas')
-        self.result_font = font.Font(size=55, weight=font.NORMAL, family='Consolas')
+        self.result_font = font.Font(size=40, weight=font.NORMAL, family='Consolas')
         
         self.root.geometry("{}x{}+0+0".format(self.CANVAS_WIDTH,  self.CANVAS_HEIGHT))
         self.canvas = tk.Canvas(self.root,
@@ -224,13 +279,31 @@ class BiSearchGuess:
             print('<<請先執行 產生題目>>')
             return
 
+        # if type(value) is not int:
+        #     raise 搜尋猜數錯誤('上限值須為整數(錯誤值{})'.format(value))
         if type(value) is not int:
-            raise 搜尋猜數錯誤('上限值須為整數(錯誤值{})'.format(value))
+            print('<<上限值須為整數(錯誤值{})>>'.format(value))
+            return
         
+        # if not self.puzzle_lowbound<= value <= self.puzzle_upbound:
+        #     raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+        #                                             self.puzzle_lowbound,
+        #                                             self.puzzle_upbound))
         if not self.puzzle_lowbound<= value <= self.puzzle_upbound:
-            raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+            print("<<超出題目範圍({}~{})>>".format(
                                                     self.puzzle_lowbound,
                                                     self.puzzle_upbound))
+            return
+
+        # if not self.bisearch_ruler.ruler_lowbound<= value <= self.bisearch_ruler.ruler_upbound:
+        #     raise 搜尋猜數錯誤("超出尺刻度範圍({}~{})".format(
+        #                                             self.bisearch_ruler.ruler_lowbound,
+        #                                             self.bisearch_ruler.ruler_upbound))
+        if not self.bisearch_ruler.ruler_lowbound<= value <= self.bisearch_ruler.ruler_upbound:
+            print("<<超出尺刻度範圍({}~{})>>".format(
+                                                    self.bisearch_ruler.ruler_lowbound,
+                                                    self.bisearch_ruler.ruler_upbound))
+            return
 
         self.bisearch_ruler.set_upbound(value)
 
@@ -248,13 +321,31 @@ class BiSearchGuess:
             print('<<請先執行 產生題目>>')
             return
 
+        # if type(value) is not int:
+        #     raise 搜尋猜數錯誤('下限值須為整數(錯誤值{})'.format(value))
         if type(value) is not int:
-            raise 搜尋猜數錯誤('下限值須為整數(錯誤值{})'.format(value))
+            print('<<下限值須為整數(錯誤值{})>>'.format(value))
+            return
         
+        # if not self.puzzle_lowbound<= value <= self.puzzle_upbound:
+        #     raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+        #                                             self.puzzle_lowbound,
+        #                                             self.puzzle_upbound))
         if not self.puzzle_lowbound<= value <= self.puzzle_upbound:
-            raise 搜尋猜數錯誤("超出題目範圍({}~{})".format(
+            print("<<超出題目範圍({}~{})>>".format(
                                                     self.puzzle_lowbound,
                                                     self.puzzle_upbound))
+            return
+
+        # if not self.bisearch_ruler.ruler_lowbound<= value <= self.bisearch_ruler.ruler_upbound:
+        #     raise 搜尋猜數錯誤("超出尺刻度範圍({}~{})".format(
+        #                                             self.bisearch_ruler.ruler_lowbound,
+        #                                             self.bisearch_ruler.ruler_upbound))
+        if not self.bisearch_ruler.ruler_lowbound<= value <= self.bisearch_ruler.ruler_upbound:
+            print("<<超出尺刻度範圍({}~{})>>".format(
+                                                    self.bisearch_ruler.ruler_lowbound,
+                                                    self.bisearch_ruler.ruler_upbound))
+            return
 
         self.bisearch_ruler.set_lowbound(value)
 
@@ -335,6 +426,7 @@ class BiSearchRuler:
 
     #ANIMATE_NUM = 50
 
+    
     
 
     #CMP_ANIMATE_NUM = 30
@@ -1111,12 +1203,19 @@ class AnswerCmp:
 
     def __gt__(self, other):
         if type(other) is not int:
-            raise 搜尋猜數錯誤('比較值須為整數(錯誤值{})'.format(other))       
+            raise 搜尋猜數錯誤('比較值須為整數(錯誤值{})'.format(other))
+                
         
         if not self.parent.puzzle_lowbound<= other <= self.parent.puzzle_upbound:
             raise 搜尋猜數錯誤("超出題目範圍({}~{})，錯誤值{}".format(
                                                     self.parent.puzzle_lowbound,
                                                     self.parent.puzzle_upbound,
+                                                    other))
+
+        if not self.parent.bisearch_ruler.lowbound<= other <= self.parent.bisearch_ruler.upbound:
+            raise 搜尋猜數錯誤("超出上下限範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.bisearch_ruler.lowbound,
+                                                    self.parent.bisearch_ruler.upbound,
                                                     other))
 
         self.parent.bisearch_ruler.set_searcher(other)
@@ -1132,6 +1231,12 @@ class AnswerCmp:
                                                     self.parent.puzzle_upbound,
                                                     other))
 
+        if not self.parent.bisearch_ruler.lowbound<= other <= self.parent.bisearch_ruler.upbound:
+            raise 搜尋猜數錯誤("超出上下限範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.bisearch_ruler.lowbound,
+                                                    self.parent.bisearch_ruler.upbound,
+                                                    other))
+
         self.parent.bisearch_ruler.set_searcher(other)
         return self.parent.bisearch_ruler.eq_cmp()
 
@@ -1143,6 +1248,12 @@ class AnswerCmp:
             raise 搜尋猜數錯誤("超出題目範圍({}~{})，錯誤值{}".format(
                                                     self.parent.puzzle_lowbound,
                                                     self.parent.puzzle_upbound,
+                                                    other))
+
+        if not self.parent.bisearch_ruler.lowbound<= other <= self.parent.bisearch_ruler.upbound:
+            raise 搜尋猜數錯誤("超出上下限範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.bisearch_ruler.lowbound,
+                                                    self.parent.bisearch_ruler.upbound,
                                                     other))
 
         self.parent.bisearch_ruler.set_searcher(other)
