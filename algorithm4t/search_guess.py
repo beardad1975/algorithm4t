@@ -24,7 +24,7 @@ class BiSearchGuess:
     
 
     DEFAULT_LOWBOUND = 0
-    DEFAULT_UPBOUND = 1000000
+    DEFAULT_UPBOUND = 100
 
     LOGO_X = 50
     LOGO_Y = 0
@@ -36,7 +36,8 @@ class BiSearchGuess:
         self.puzzle_lowbound = None
         self.puzzle_upbound = None
         self.puzzle_answer = None  # bin str
-        self.bisearch_ruler = None 
+        self.bisearch_ruler = None
+        self.search_guessing = False 
         
     def __repr__(self):
         text = '範圍:{}~{} (次數: , 搜尋:{}, 下限:{}, 上限:{} )'.format(
@@ -53,6 +54,12 @@ class BiSearchGuess:
         if common.current_algorithm is not None and common.current_algorithm != self.ALGORITHM_NAME :
             raise 搜尋猜數錯誤('\n\n'+common.current_algorithm + "演算法已在執行中\n無法同時執行"+self.ALGORITHM_NAME)
         common.current_algorithm =  self.ALGORITHM_NAME
+
+        if not self.search_guessing:
+            self.search_guessing = True
+        else:
+            print('<<題目已產生>>')
+            return
 
         if len(args) == 0:
             self.puzzle_lowbound = self.DEFAULT_LOWBOUND
@@ -145,10 +152,19 @@ class BiSearchGuess:
 
     @property
     def 上限(self):
+        if not self.search_guessing:
+            print('<<請先執行 產生題目>>')
+            return 
+            
         return self.bisearch_ruler.upbound
+            
 
     @上限.setter
     def 上限(self, value):
+        if not self.search_guessing:
+            print('<<請先執行 產生題目>>')
+            return
+
         if type(value) is not int:
             raise 搜尋猜數錯誤('上限值須為整數(錯誤值{})'.format(value))
         
@@ -161,10 +177,18 @@ class BiSearchGuess:
 
     @property
     def 下限(self):
+        if not self.search_guessing:
+            print('<<請先執行 產生題目>>')
+            return
+
         return self.bisearch_ruler.lowbound
 
     @下限.setter
     def 下限(self, value):
+        if not self.search_guessing:
+            print('<<請先執行 產生題目>>')
+            return
+
         if type(value) is not int:
             raise 搜尋猜數錯誤('下限值須為整數(錯誤值{})'.format(value))
         
@@ -177,14 +201,24 @@ class BiSearchGuess:
 
     @property
     def 題目上範圍(self):
+        if not self.search_guessing:
+            print('<<請先執行 產生題目>>')
+            return
+
         return self.puzzle_upbound
 
     @property
     def 題目下範圍(self):
+        if not self.search_guessing:
+            print('<<請先執行 產生題目>>')
+            return
+
         return self.puzzle_lowbound
 
     @property
     def 答案(self):
+        if not self.search_guessing:
+            raise 搜尋猜數錯誤('\n\n答案未產生 請先執行 產生題目')    
         return AnswerCmp(self)
 
 
