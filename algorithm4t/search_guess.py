@@ -845,21 +845,34 @@ class BiSearchRuler:
             self.draw_searcher(value)
 
             if self.check_need_zoomin_scale():
+                
                 low, up = self.calc_ruler_range(self.lowbound,
                                             self.upbound)
                 # for i in range(50):
                 #     self.delay()
-                self.set_ruler_range( low, up)
+                
+                if low <= value <= up:
+                    self.set_ruler_range( low, up)
 
             
         elif value > self.ruler_upbound:
-            low, up = self.calc_ruler_range(self.lowbound, value)
-            self.set_ruler_range( low, up)
-            self.draw_searcher(value)
+            assert False, 'should checked'
+            # print("<<超出尺刻度範圍({}~{})，錯誤值{}>>".format(
+            #                                         self.ruler_lowbound,
+            #                                         self.ruler_upbound,
+            #                                         other))
+            #low, up = self.calc_ruler_range(self.lowbound, value)
+            #self.set_ruler_range( low, up)
+            #self.draw_searcher(value)
         elif value < self.ruler_lowbound:
-            low, up = self.calc_ruler_range(value, self.upbound)
-            self.set_ruler_range( low, up)
-            self.draw_searcher(value)
+            assert False, 'should checked'
+            # print("<<超出尺刻度範圍({}~{})，錯誤值{}>>".format(
+            #                                         self.ruler_lowbound,
+            #                                         self.ruler_upbound,
+            #                                         other))
+            #low, up = self.calc_ruler_range(value, self.upbound)
+            #self.set_ruler_range( low, up)
+            #self.draw_searcher(value)
 
 
     def draw_searcher(self, value):
@@ -1212,10 +1225,10 @@ class AnswerCmp:
                                                     self.parent.puzzle_upbound,
                                                     other))
 
-        if not self.parent.bisearch_ruler.lowbound<= other <= self.parent.bisearch_ruler.upbound:
-            raise 搜尋猜數錯誤("超出上下限範圍({}~{})，錯誤值{}".format(
-                                                    self.parent.bisearch_ruler.lowbound,
-                                                    self.parent.bisearch_ruler.upbound,
+        if not self.parent.bisearch_ruler.ruler_lowbound<= other <= self.parent.bisearch_ruler.ruler_upbound:
+            raise 搜尋猜數錯誤("超出尺刻度範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.bisearch_ruler.ruler_lowbound,
+                                                    self.parent.bisearch_ruler.ruler_upbound,
                                                     other))
 
         self.parent.bisearch_ruler.set_searcher(other)
@@ -1231,10 +1244,10 @@ class AnswerCmp:
                                                     self.parent.puzzle_upbound,
                                                     other))
 
-        if not self.parent.bisearch_ruler.lowbound<= other <= self.parent.bisearch_ruler.upbound:
-            raise 搜尋猜數錯誤("超出上下限範圍({}~{})，錯誤值{}".format(
-                                                    self.parent.bisearch_ruler.lowbound,
-                                                    self.parent.bisearch_ruler.upbound,
+        if not self.parent.bisearch_ruler.ruler_lowbound<= other <= self.parent.bisearch_ruler.ruler_upbound:
+            raise 搜尋猜數錯誤("超出尺刻度範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.bisearch_ruler.ruler_lowbound,
+                                                    self.parent.bisearch_ruler.ruler_upbound,
                                                     other))
 
         self.parent.bisearch_ruler.set_searcher(other)
@@ -1250,10 +1263,10 @@ class AnswerCmp:
                                                     self.parent.puzzle_upbound,
                                                     other))
 
-        if not self.parent.bisearch_ruler.lowbound<= other <= self.parent.bisearch_ruler.upbound:
-            raise 搜尋猜數錯誤("超出上下限範圍({}~{})，錯誤值{}".format(
-                                                    self.parent.bisearch_ruler.lowbound,
-                                                    self.parent.bisearch_ruler.upbound,
+        if not self.parent.bisearch_ruler.ruler_lowbound<= other <= self.parent.bisearch_ruler.ruler_upbound:
+            raise 搜尋猜數錯誤("超出尺刻度範圍({}~{})，錯誤值{}".format(
+                                                    self.parent.bisearch_ruler.ruler_lowbound,
+                                                    self.parent.bisearch_ruler.ruler_upbound,
                                                     other))
 
         self.parent.bisearch_ruler.set_searcher(other)
