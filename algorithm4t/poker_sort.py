@@ -910,7 +910,7 @@ class PokerSort:
         return len(self.prepare_cards_list)
 
 
-排序撲克 = PokerSort()
+poker = PokerSort()
 
 
 class Card:

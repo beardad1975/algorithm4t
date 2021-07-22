@@ -127,15 +127,15 @@ class BiSearchGuess:
             print('<<請先執行 產生題目>>')
             return 
 
-        if not self.bisearch_ruler.searcher_num:
+        if self.bisearch_ruler.searcher_num is None:
             print('<<請至少搜尋1次(與答案比較)>>')
             return 
 
-        'here'
+        
         if self.bisearch_ruler.searcher_num == int(self.puzzle_answer, 2):
             tmp_text = "搜尋成功"
         else:
-            tmp_text = '搜尋失敗\n答案是\n{}'.format(int(self.puzzle_answer, 2))
+            tmp_text = '搜尋失敗\n答案{}'.format(int(self.puzzle_answer, 2))
 
         self.result_id = self.canvas.create_text(
                 self.RESULT_X,
@@ -234,7 +234,7 @@ class BiSearchGuess:
         self.scale_font = font.Font(size=10, weight=font.NORMAL, family='Consolas')
         self.small_font = font.Font(size=12, weight=font.NORMAL, family='Consolas')
         self.normal_font = font.Font(size=14, weight=font.NORMAL, family='Consolas')
-        self.result_font = font.Font(size=40, weight=font.NORMAL, family='Consolas')
+        self.result_font = font.Font(size=32, weight=font.NORMAL, family='Consolas')
         
         self.root.geometry("{}x{}+0+0".format(self.CANVAS_WIDTH,  self.CANVAS_HEIGHT))
         self.canvas = tk.Canvas(self.root,
@@ -372,7 +372,7 @@ class BiSearchGuess:
         return AnswerCmp(self)
 
 
-搜尋猜數 = BiSearchGuess()  
+guess = BiSearchGuess()  
 
 
 class BiSearchRuler:
