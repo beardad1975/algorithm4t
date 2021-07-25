@@ -22,6 +22,7 @@ class BiSearchGuess:
     BACKGROUND_NAME = 'search_guess_bg'
     LOGO_NAME = 'search_guess_logo'
     
+    PUZZLE_MIN_DELTA = 5 
 
     DEFAULT_LOWBOUND = 0
     DEFAULT_UPBOUND = 100
@@ -73,19 +74,21 @@ class BiSearchGuess:
 
         if len(args) == 0:
             self.puzzle_lowbound = self.DEFAULT_LOWBOUND
-            self.puzzle_upbound = self.DEFAULT_UPBOUND
+            self.puzzle_upbound = self.DEFAULT_UPBOUND - 1
         elif len(args) == 1:
             self.puzzle_lowbound = self.DEFAULT_LOWBOUND
 
             # check upbound
             upbound = args[0]
             if type(upbound) is not int:
-                raise 搜尋猜數錯誤('題目上範圍須為整數(錯誤值{})'.format(upbound))
+                raise 搜尋猜數錯誤('上範圍須為整數(錯誤值{})'.format(upbound))
             
-            if upbound <= 0 :
-                raise 搜尋猜數錯誤('題目上範圍須為整數(錯誤值{})'.format(upbound))
+            if upbound < self.PUZZLE_MIN_DELTA :
+                raise 搜尋猜數錯誤('上下範圍太小, 至少差距{}'.format(self.PUZZLE_MIN_DELTA))
 
-            self.puzzle_upbound = upbound
+            
+
+            self.puzzle_upbound = upbound - 1
         elif len(args) == 2:
             # check 
             lowbound, upbound = args[0], args[1]
@@ -98,7 +101,10 @@ class BiSearchGuess:
             if upbound <= lowbound :
                 raise 搜尋猜數錯誤('題目上範圍須大於下範圍)')
 
-            self.puzzle_upbound = upbound
+            if upbound-lowbound < self.PUZZLE_MIN_DELTA :
+                raise 搜尋猜數錯誤('上下範圍太小, 至少差距{}'.format(self.PUZZLE_MIN_DELTA))
+
+            self.puzzle_upbound = upbound - 1
             self.puzzle_lowbound = lowbound
 
         else:
